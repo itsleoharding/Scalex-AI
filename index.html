@@ -1,0 +1,3092 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Website</title>
+
+  <!-- Link-preview card (Instagram, WhatsApp, iMessage, etc.): Embed.png at site root. -->
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content="Embed.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:image" content="Embed.png" />
+
+  <!-- Preconnect to every origin we fetch from on demand so the connection  -->
+  <!-- is already warm: Google Fonts, the PDF.js CDN (loaded when a PDF       -->
+  <!-- deliverable is opened), and Calendly (loaded when the CTA is clicked). -->
+  <!-- Google Fonts: Roboto Slab (400, 900) + JetBrains Mono (500, 700) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin />
+  <link rel="preconnect" href="https://calendly.com" />
+  <link rel="preconnect" href="https://assets.calendly.com" crossorigin />
+  <link rel="preconnect" href="https://miro.com" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Roboto+Slab:wght@400;900&display=swap"
+    rel="stylesheet"
+  />
+
+  <style>
+    :root {
+      /* The agency's colours (sage on charcoal) carry the whole page. */
+      --base: #2e2e2e;
+      --surface: #272727;
+      --card: #333333;
+      --sage: #b1f7cc;
+      --ink: #f4f4f1;
+      --muted: #a6a6a6;
+      --hairline: rgba(255, 255, 255, 0.08);
+    }
+
+    /* ---- Base reset. Replaces the parts of Tailwind's preflight the layout */
+    /* relies on (border-box sizing + zeroed default margins) now that the    */
+    /* Tailwind runtime CDN has been removed for speed. ---- */
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+    }
+    body,
+    h1, h2, h3, h4, h5, h6,
+    p, figure {
+      margin: 0;
+    }
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    /* ---- The only Tailwind spacing utilities the page used, as plain CSS. - */
+    .pt-7 { padding-top: 1.75rem; }
+    .pt-8 { padding-top: 2rem; }
+    .pt-10 { padding-top: 2.5rem; }
+    .pb-0 { padding-bottom: 0; }
+    .pb-10 { padding-bottom: 2.5rem; }
+    .pb-20 { padding-bottom: 5rem; }
+    .mt-4 { margin-top: 1rem; }
+    .mt-6 { margin-top: 1.5rem; }
+    .mt-7 { margin-top: 1.75rem; }
+    .mt-8 { margin-top: 2rem; }
+    .mt-10 { margin-top: 2.5rem; }
+
+    html {
+      scroll-behavior: smooth;
+      /* Stop iOS Safari / Android Chrome from auto-inflating ("boosting")    */
+      /* body text on real devices, which throws the scaled layout out of     */
+      /* proportion even though desktop devtools emulation looks correct.     */
+      -webkit-text-size-adjust: 100%;
+      -moz-text-size-adjust: 100%;
+      text-size-adjust: 100%;
+    }
+
+    body {
+      background-color: var(--base);
+      color: var(--ink);
+      font-family: "Roboto Slab", serif;
+      font-weight: 400;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+      position: relative;
+      overflow-x: hidden;
+      /* Centered throughout */
+      text-align: center;
+    }
+
+    /* ============ ATMOSPHERE ============ */
+
+    /* Fixed grain overlay at ~0.10 opacity */
+    .grain-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 1;
+      pointer-events: none;
+      opacity: 0.1;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    }
+
+    /* Fixed faint sage grid overlay at ~0.04 opacity, 36px cell */
+    .grid-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 1;
+      pointer-events: none;
+      opacity: 0.04;
+      background-image:
+        linear-gradient(to right, var(--sage) 1px, transparent 1px),
+        linear-gradient(to bottom, var(--sage) 1px, transparent 1px);
+      background-size: 36px 36px;
+    }
+
+    /* One soft sage radial glow at the very top, behind the hero, low opacity */
+    .hero-glow {
+      position: fixed;
+      top: -240px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 1100px;
+      height: 700px;
+      z-index: 0;
+      pointer-events: none;
+      background: radial-gradient(
+        ellipse at center,
+        rgba(177, 247, 204, 0.12) 0%,
+        rgba(177, 247, 204, 0.05) 38%,
+        transparent 70%
+      );
+    }
+
+    /* Clipping wrapper for the scaled page. transform: scale() leaves the    */
+    /* element's full unscaled height in layout, which otherwise adds a large */
+    /* empty gap below the content. This wrapper is given an explicit height  */
+    /* (the page's visual height) in JS and clips the leftover, so the page   */
+    /* ends exactly at the content on every browser.                          */
+    .page-clip {
+      position: relative;
+      z-index: 2;
+      overflow: hidden;
+    }
+
+    /* Keep real content above the overlays */
+    .page {
+      position: relative;
+      z-index: 2;
+      /* Uniformly scale every element to 0.5625 (75% of 75%) so the design   */
+      /* sits at the same small size on every device. We use transform:scale  */
+      /* rather than `zoom` because `zoom` is non-standard and several mobile  */
+      /* engines (iOS Safari, in-app webviews) fail to scale vw-based clamp()  */
+      /* text under it, which left the text oversized on real phones.          */
+      /* transform scales the painted result uniformly, so it is consistent.  */
+      /* width = 1 / 0.5625 = 177.7778% so that after scaling it fills the     */
+      /* viewport exactly; origin top-left anchors it to the corner.           */
+      /* Mobile / tablet: render the SAME fixed-width layout as desktop and    */
+      /* scale that whole canvas uniformly to the viewport (factor computed in */
+      /* the head script), so a phone shows a pixel-faithful, smaller copy of  */
+      /* the desktop view — identical spacing, line breaks, structure, flow.   */
+      transform: scale(var(--page-scale, 0.43));
+      transform-origin: top left;
+      width: 910px;
+    }
+
+    /* On laptops and desktops, double the diagonal size of every element.    */
+    /* Doubling the diagonal means doubling the linear scale: 0.5625 -> 1.125. */
+    /* width = 1 / 1.125 = 88.8889% so it still fills the viewport exactly.    */
+    /* Desktop / laptop: keep the original percentage-width + 1.125 scale      */
+    /* untouched. Font sizes are now fixed (below) at exactly the values this  */
+    /* breakpoint already produced, so desktop renders identically.           */
+    @media (min-width: 1024px) {
+      .page {
+        transform: scale(1.125);
+        width: 88.8889%;
+      }
+    }
+
+    /* ============ CONTAINER ============ */
+    .container-narrow {
+      max-width: 880px;
+      margin-left: auto;
+      margin-right: auto;
+      padding-left: 24px;
+      padding-right: 24px;
+    }
+
+    /* ============ TYPOGRAPHY HELPERS ============ */
+    .font-black {
+      font-family: "Roboto Slab", serif;
+      font-weight: 900;
+    }
+    .mono {
+      font-family: "JetBrains Mono", monospace;
+    }
+
+    .eyebrow {
+      font-family: "JetBrains Mono", monospace;
+      font-weight: 700;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--sage);
+      font-size: 1.2552rem;
+    }
+
+    .heading {
+      font-family: "Roboto Slab", serif;
+      font-weight: 900;
+      line-height: 1.12;
+      color: var(--ink);
+    }
+
+    .heading em {
+      font-style: italic;
+    }
+
+    .body-copy {
+      font-family: "Roboto Slab", serif;
+      font-weight: 400;
+      color: var(--ink);
+      line-height: 1.75;
+      font-size: 1.075rem;
+    }
+
+    .body-copy p + p {
+      margin-top: 1.35rem;
+    }
+
+    /* ============ VIDEO FRAME ============ */
+    .video-frame {
+      position: relative;
+      width: 92.5%;
+      margin-left: auto;
+      margin-right: auto;
+      aspect-ratio: 16 / 9;
+      border-radius: 16px;
+      overflow: hidden;
+      background-color: var(--card);
+      border: 2px solid rgba(177, 247, 204, 0.55);
+      box-shadow:
+        0 0 0 1px rgba(177, 247, 204, 0.08),
+        0 24px 70px -28px rgba(177, 247, 204, 0.35),
+        0 18px 50px -30px rgba(0, 0, 0, 0.8),
+        0 0 36px 5px rgba(177, 247, 204, 0.32); /* sage glow */
+    }
+
+    .video-frame iframe {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      border: 0;
+    }
+
+    /* ============ CUSTOM HERO VIDEO PLAYER ============ */
+    /* Minimal sage player: click to play/pause, drag the playbar, fullscreen. */
+    /* No other controls. Always plays at 1.5x with pitch preserved (script).  */
+    .vplayer {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+      background: #000;
+      cursor: pointer;
+    }
+    .vplayer video {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      background: #000;
+      display: block;
+    }
+    /* Big centre play button — shown only when paused. */
+    .vp-bigplay {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 84px;
+      height: 84px;
+      padding: 0;
+      border: 0;
+      border-radius: 9999px;
+      background-color: var(--sage);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      z-index: 3;
+      box-shadow: 0 14px 40px -10px rgba(177, 247, 204, 0.55);
+      transition: transform 0.15s ease, opacity 0.2s ease;
+    }
+    .vp-bigplay svg { width: 34px; height: 34px; margin-left: 5px; fill: #16241b; }
+    .vp-bigplay:hover { transform: translate(-50%, -50%) scale(1.06); }
+    .vp-bigplay:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
+    .vplayer.vp-playing .vp-bigplay { opacity: 0; pointer-events: none; }
+
+    /* Control bar: play/pause · draggable playbar · fullscreen. */
+    .vp-bar {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 4;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 30px 18px 14px;
+      background: linear-gradient(to top, rgba(8, 10, 9, 0.78), rgba(8, 10, 9, 0));
+      opacity: 1;
+      transition: opacity 0.25s ease;
+    }
+    /* Auto-hide the bar while playing + pointer idle. */
+    .vplayer.vp-playing.vp-idle .vp-bar { opacity: 0; }
+    .vplayer.vp-playing.vp-idle { cursor: none; }
+
+    .vp-btn {
+      flex: 0 0 auto;
+      width: 34px;
+      height: 34px;
+      padding: 0;
+      border: 0;
+      border-radius: 9999px;
+      background: transparent;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: var(--sage);
+      transition: transform 0.15s ease, color 0.15s ease;
+    }
+    .vp-btn svg { width: 22px; height: 22px; fill: currentColor; }
+    .vp-btn:hover { transform: scale(1.12); color: #ffffff; }
+    .vp-btn:focus-visible { outline: 2px solid var(--sage); outline-offset: 3px; }
+    /* Play/pause + fullscreen icon toggles driven by player state classes. */
+    .vp-i-pause, .vp-i-exitfs { display: none; }
+    .vplayer.vp-playing .vp-play .vp-i-play { display: none; }
+    .vplayer.vp-playing .vp-play .vp-i-pause { display: block; }
+    .vplayer.vp-fsactive .vp-fs .vp-i-fs { display: none; }
+    .vplayer.vp-fsactive .vp-fs .vp-i-exitfs { display: block; }
+
+    /* Draggable playbar. */
+    .vp-progress {
+      flex: 1 1 auto;
+      display: flex;
+      align-items: center;
+      height: 20px;
+      cursor: pointer;
+      touch-action: none;
+    }
+    .vp-track {
+      position: relative;
+      width: 100%;
+      height: 5px;
+      border-radius: 9999px;
+      background: rgba(255, 255, 255, 0.25);
+    }
+    .vp-buffered,
+    .vp-played {
+      position: absolute;
+      left: 0;
+      top: 0;
+      height: 100%;
+      width: 0%;
+      border-radius: 9999px;
+    }
+    .vp-buffered { background: rgba(255, 255, 255, 0.3); }
+    .vp-played { background: var(--sage); }
+    .vp-handle {
+      position: absolute;
+      top: 50%;
+      left: 0;
+      width: 13px;
+      height: 13px;
+      border-radius: 9999px;
+      background: var(--sage);
+      transform: translate(-50%, -50%);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.55);
+      opacity: 0;
+      transition: opacity 0.15s ease;
+    }
+    .vp-progress:hover .vp-handle,
+    .vp-progress:focus-visible .vp-handle,
+    .vplayer.vp-scrubbing .vp-handle { opacity: 1; }
+    .vp-progress:focus-visible { outline: none; }
+
+    /* Fullscreen: fill the screen, letterbox (contain) rather than crop. */
+    .vplayer:fullscreen { width: 100vw; height: 100vh; background: #000; }
+    .vplayer:fullscreen video { object-fit: contain; }
+    .vplayer:-webkit-full-screen { width: 100vw; height: 100vh; background: #000; }
+    .vplayer:-webkit-full-screen video { object-fit: contain; }
+
+    /* ============ MIRO BOARD (Client Results) ============ */
+    /* Responsive 16:9 (1920x1080) frame that fills the widget width and keeps  */
+    /* its ratio on every screen. Same sage-frame treatment as the hero video;  */
+    /* width:100% so it sits inside the .row-widget rather than the content col. */
+    .miro-frame {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 4 / 3;   /* 4:3 horizontal widget, like the type widgets */
+      border-radius: 16px;
+      overflow: hidden;
+      background-color: var(--card);
+      border: 2px solid rgba(177, 247, 204, 0.55);
+      box-shadow:
+        0 0 0 1px rgba(177, 247, 204, 0.08),
+        0 24px 70px -28px rgba(177, 247, 204, 0.35),
+        0 18px 50px -30px rgba(0, 0, 0, 0.8);
+    }
+    /* Homemade draggable/zoomable board (replaces the Miro embed) — fills the    */
+    /* same framed 16:9 wrapper; the image is panned/zoomed via a CSS transform.  */
+    .miro-frame .board {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+      cursor: grab;
+      touch-action: none;
+      background-color: #2e2e2e; /* match the board image's own background */
+    }
+    .miro-frame .board.is-dragging { cursor: grabbing; }
+    .miro-frame .board-img {
+      position: absolute;
+      top: 0;
+      left: 0;
+      transform-origin: 0 0;
+      will-change: transform;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-user-drag: none;
+      pointer-events: none;
+      max-width: none;
+    }
+
+    /* ============================================================= */
+    /* SAMPLE-DELIVERABLES ZONE                                       */
+    /* Each card is just the type name + a CTA; clicking the CTA opens */
+    /* the real deliverable in the in-page lightbox (see end of body). */
+    /* ============================================================= */
+
+    /* The outer "funnel widget" houses one overarching funnel: its centered   */
+    /* funnel name + a stack of sub-widgets, one per deliverable type. Internal */
+    /* padding (36px) matches the element gaps so the rhythm stays uniform.     */
+    /* Wrapper that holds the funnel widgets at the SAME width as the hero      */
+    /* video placeholder (92.5% of the content column), centered. The section   */
+    /* heading stays full width above them. Vertical gaps between the widgets   */
+    /* are left untouched so more can be added later.                           */
+    .deliverables-scale {
+      width: 92.5%;
+      max-width: 100%;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    /* position: relative anchors each widget's top-left info button. */
+    .row-widget {
+      position: relative;
+      background-color: var(--surface);
+      border: 1px solid var(--sage);
+      border-radius: 22px;
+      padding: 36px;
+      box-shadow:
+        0 30px 70px -45px rgba(0, 0, 0, 0.9),
+        0 0 42px 5px rgba(177, 247, 204, 0.30); /* sage glow */
+    }
+    /* Client-results board: no wrapper padding so the 4:3 board sits flush (no
+       band above/below); drop the inner frame's redundant border so the widget
+       reads as one clean 4:3 box. */
+    .row-widget.board-widget { padding: 0; aspect-ratio: 4 / 3; overflow: hidden; }
+    .row-widget.board-widget .miro-frame { border: 0; border-radius: 22px; height: 100%; }
+
+    /* Sub-widget: one deliverable TYPE nested inside a funnel widget. Groups   */
+    /* that type's samples under their own heading + slider, so each funnel     */
+    /* (row) widget reads as a stack of labelled type groups.                   */
+    .sub-widget {
+      position: relative;
+      aspect-ratio: 4 / 3;   /* type widget frame: 4:3 horizontal */
+      background-color: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--sage);
+      border-radius: 16px;
+      padding: 0 28px 28px;   /* top gap comes from the heading's own margin */
+      /* Centre content horizontally; title sits at the top with equal spacing */
+      /* above (to the widget top) and below (to the parts/instances). */
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+    }
+    .sub-heading {
+      font-family: "Roboto Slab", serif;
+      font-weight: 900;
+      line-height: 1.12;
+      color: var(--ink);
+      text-align: center;
+      font-size: 20px;
+      margin: 52px 0 28px;   /* nudged down so the gap above visually equals the gap below */
+    }
+    /* Re-base the slider's edge-bleed to the sub-widget padding (28px) instead */
+    /* of the outer widget padding (36px) so the cards still reach the inner    */
+    /* edges and the next card peeks correctly.                                 */
+    .sub-widget .deliverables-slider {
+      padding-left: 28px;
+      padding-right: 28px;
+      margin-left: -28px;
+      margin-right: -28px;
+      scroll-padding: 0 28px;
+      align-self: stretch;              /* stay full width inside the centred column */
+      justify-content: safe center;     /* centre the parts when they fit; start-align if they overflow */
+    }
+
+    /* ============ INFO BUTTON + POPUP ============ */
+    /* A small "i" affordance pinned to the TOP-LEFT of every Section, Type,    */
+    /* and Instance widget. Clicking it opens the shared info popup with that   */
+    /* widget's one-sentence description (single source of truth: the INFO map  */
+    /* in the script below, keyed by data-info). The click is stopped from      */
+    /* bubbling so it never triggers the widget's asset/preview behaviour.      */
+    .info-btn {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      z-index: 5;
+      width: 26px;
+      height: 26px;
+      padding: 0;
+      border-radius: 9999px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      background-color: rgba(20, 20, 20, 0.55);
+      border: 1px solid rgba(177, 247, 204, 0.4);
+      color: var(--sage);
+      font-family: "Roboto Slab", serif;
+      font-weight: 900;
+      font-style: italic;
+      font-size: 0.95rem;
+      line-height: 1;
+      transition: transform 0.15s ease, background-color 0.15s ease, color 0.15s ease;
+    }
+    .info-btn:hover {
+      background-color: var(--sage);
+      color: #16241b;
+      transform: scale(1.08);
+    }
+    .info-btn:focus-visible {
+      outline: 3px solid var(--sage);
+      outline-offset: 2px;
+    }
+    /* Instance cards are smaller, so give them a smaller icon tucked closer.   */
+    .block-card .info-btn {
+      top: 10px;
+      left: 10px;
+      width: 22px;
+      height: 22px;
+      font-size: 0.82rem;
+    }
+
+    /* Shared info popup (rendered OUTSIDE the scaled .page, like the lightbox, */
+    /* so it fills the real viewport and can't be clipped by the scaled page). */
+    .infobox {
+      position: fixed;
+      inset: 0;
+      z-index: 60;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      opacity: 0;
+      transition: opacity 0.18s ease;
+    }
+    .infobox[hidden] {
+      display: none;
+    }
+    .infobox.is-open {
+      opacity: 1;
+    }
+    .infobox-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(8, 10, 9, 0.86);
+      -webkit-backdrop-filter: blur(4px);
+      backdrop-filter: blur(4px);
+    }
+    .infobox-panel {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 460px;
+      background-color: var(--surface);
+      border: 1px solid rgba(177, 247, 204, 0.28);
+      border-radius: 20px;
+      padding: 40px 30px 32px;
+      box-shadow: 0 40px 90px -40px rgba(0, 0, 0, 0.95);
+      text-align: center;
+    }
+    .infobox-title {
+      font-family: "Roboto Slab", serif;
+      font-weight: 900;
+      font-size: 1.35rem;
+      line-height: 1.2;
+      color: var(--ink);
+      margin-bottom: 12px;
+    }
+    .infobox-desc {
+      font-family: "Roboto Slab", serif;
+      font-weight: 400;
+      font-size: 1.02rem;
+      line-height: 1.7;
+      color: var(--muted);
+    }
+    .infobox-close {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      width: 40px;
+      height: 40px;
+      border-radius: 9999px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid rgba(177, 247, 204, 0.35);
+      background-color: rgba(20, 20, 20, 0.86);
+      color: var(--ink);
+      font-family: "JetBrains Mono", monospace;
+      font-size: 1.5rem;
+      line-height: 1;
+      cursor: pointer;
+      transition: transform 0.15s ease, background-color 0.15s ease, color 0.15s ease;
+    }
+    .infobox-close:hover {
+      background-color: var(--sage);
+      color: #16241b;
+      transform: scale(1.06);
+    }
+    .infobox-close:focus-visible {
+      outline: 3px solid var(--sage);
+      outline-offset: 3px;
+    }
+
+    /* ============ BOOKING MODAL ============ */
+    /* Opened by the hero CTA. Rendered OUTSIDE the scaled .page (like the      */
+    /* lightbox) as a fixed, viewport-anchored overlay, so opening it never     */
+    /* grows or scroll-traps the clipped, scaled page — which is what glitched  */
+    /* on mobile. The inner card reuses the .row-widget shell so it still looks */
+    /* like a deliverable widget.                                              */
+    .booking {
+      position: fixed;
+      inset: 0;
+      z-index: 50;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+    .booking[hidden] {
+      display: none;
+    }
+    .booking.is-open {
+      opacity: 1;
+    }
+    .booking-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(8, 10, 9, 0.86);
+      -webkit-backdrop-filter: blur(4px);
+      backdrop-filter: blur(4px);
+    }
+    .booking-panel {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 760px;
+      max-height: 92vh;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    /* Inner card: same shell as the deliverable widgets. */
+    .calendar-widget {
+      position: relative;
+    }
+    .calendar-close {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      width: 40px;
+      height: 40px;
+      border-radius: 9999px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid rgba(177, 247, 204, 0.35);
+      background-color: rgba(20, 20, 20, 0.86);
+      color: var(--ink);
+      font-family: "JetBrains Mono", monospace;
+      font-size: 1.5rem;
+      line-height: 1;
+      cursor: pointer;
+      z-index: 3;
+      transition: transform 0.15s ease, background-color 0.15s ease, color 0.15s ease;
+    }
+    .calendar-close:hover {
+      background-color: var(--sage);
+      color: #16241b;
+      transform: scale(1.06);
+    }
+    .calendar-close:focus-visible {
+      outline: 3px solid var(--sage);
+      outline-offset: 3px;
+    }
+    .calendar-frame {
+      position: relative;
+      width: 100%;
+      border-radius: 16px;
+      overflow: hidden;
+      background-color: #ffffff;
+      border: 2px solid rgba(177, 247, 204, 0.55);
+      box-shadow:
+        0 0 0 1px rgba(177, 247, 204, 0.08),
+        0 18px 50px -30px rgba(0, 0, 0, 0.8);
+    }
+    .calendar-frame iframe {
+      display: block;
+      width: 100%;
+      height: min(72vh, 760px);
+      border: 0;
+    }
+    /* Tighten the card padding on phones so the embed gets more width. */
+    @media (max-width: 600px) {
+      .booking .row-widget {
+        padding: 18px;
+      }
+      /* Calendly renders too large (zoomed in) at the narrow modal width on   */
+      /* phones, so zoom it out to ~75%: give the frame a fixed height and      */
+      /* over-size the iframe (1 / 0.75 = 133.33%) then scale it back down to   */
+      /* fill the frame exactly.                                                */
+      .calendar-frame {
+        height: min(72vh, 760px);
+      }
+      .calendar-frame iframe {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 133.3333%;
+        height: 133.3333%;
+        transform: scale(0.75);
+        transform-origin: top left;
+      }
+    }
+
+    /* Funnel name, horizontally centered inside the funnel widget. */
+    .row-heading {
+      font-family: "Roboto Slab", serif;
+      font-weight: 900;
+      line-height: 1.12;
+      color: var(--ink);
+      text-align: center;
+      font-size: 26px;
+    }
+
+    /* Centered sample name. */
+    .sample-label {
+      font-family: "JetBrains Mono", monospace;
+      font-weight: 700;
+      font-size: 0.82rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--sage);
+      text-align: center;
+    }
+
+    /* Qualifier in brackets (e.g. "(Email)") forced onto its own line under   */
+    /* the name so a long label never wraps unevenly.                         */
+    .sample-sub {
+      display: block;
+      margin-top: 3px;
+      font-size: 0.72rem;
+      letter-spacing: 0.16em;
+      color: var(--muted);
+    }
+
+    /* ============ SAMPLE CARD (sub-widget inside the slider) ============ */
+    /* Internal padding (56px) matches the doubled element gaps.              */
+    .block-card {
+      position: relative;
+      aspect-ratio: 3 / 4;   /* instance widget frame: 4:3 vertical */
+      background-color: var(--card);
+      border: 1px solid var(--sage);
+      border-radius: 18px;
+      padding: 28px;
+      box-shadow: 0 24px 60px -40px rgba(0, 0, 0, 0.9);
+      text-align: center;
+    }
+
+    /* ============ COMING-SOON / ASSET-PENDING PLACEHOLDER STATE ============ */
+    /* This is the SHELL build: every tile ships with its lightbox anchor      */
+    /* fully wired but pointing at a bracketed [TOKEN]. A small script (below) */
+    /* detects the unfilled token, drops the tile into this quiet placeholder  */
+    /* state, and prevents the anchor from opening a broken lightbox. Tiles    */
+    /* flagged data-asset-pending (canonical items added by the audit that     */
+    /* have no asset yet) read "Asset Pending"; the rest read "Coming Soon".   */
+    /* Backfilling later is a straight asset swap: replace the [TOKEN] in the  */
+    /* href (or data-lb-srcs) with the real path and the tile re-activates on  */
+    /* its own — no other markup change required.                             */
+    .block-card.is-coming-soon {
+      border-style: dashed;
+      border-color: rgba(177, 247, 204, 0.28);
+    }
+    .cta-button.is-disabled {
+      background-color: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--hairline);
+      box-shadow: none;
+      color: var(--muted);
+      cursor: default;
+      pointer-events: none;
+      flex-direction: row;
+      gap: 0;
+      padding: 13px 22px;
+    }
+    .cta-button.is-disabled:hover {
+      transform: none;
+      box-shadow: none;
+    }
+    .cs-label {
+      font-family: "JetBrains Mono", monospace;
+      font-weight: 700;
+      font-size: 0.6526rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--muted);
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .cs-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 9999px;
+      background: rgba(177, 247, 204, 0.55);
+      display: inline-block;
+      flex: 0 0 auto;
+    }
+
+    /* ============ DELIVERABLES SLIDER ============ */
+    /* Horizontal scroll-snap carousel. Cards bleed to the widget's inner     */
+    /* edges via negative margins, and the next card peeks to signal scroll.  */
+    .deliverables-slider {
+      display: flex;
+      gap: 20px;
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      scroll-padding: 0 36px;
+      -webkit-overflow-scrolling: touch;
+      /* Negative margins match the .row-widget padding (36px) so the cards    */
+      /* bleed to the widget's inner edges and the next one peeks.             */
+      padding: 10px 36px 28px;
+      margin-left: -36px;
+      margin-right: -36px;
+      text-align: left;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(177, 247, 204, 0.4) transparent;
+    }
+
+    .deliverables-slider::-webkit-scrollbar {
+      height: 8px;
+    }
+    .deliverables-slider::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .deliverables-slider::-webkit-scrollbar-thumb {
+      background-color: rgba(177, 247, 204, 0.3);
+      border-radius: 9999px;
+    }
+
+    .deliverables-slider .block-card {
+      flex: 0 0 auto;
+      width: 250px;
+      scroll-snap-align: center;
+    }
+
+    /* Single-card widget (e.g. Slideshow): center the lone card and turn off  */
+    /* horizontal scrolling since there's nothing else to swipe to.            */
+    .deliverables-slider.is-single {
+      justify-content: center;
+      overflow-x: visible;
+      scroll-snap-type: none;
+    }
+
+    /* Swipe/scroll hints removed — the scrollbar already signals scrollability. */
+    .slider-hint {
+      display: none;
+      font-family: "JetBrains Mono", monospace;
+      font-weight: 500;
+      font-size: 0.72rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    /* ============ CALL TO ACTION BUTTON ============ */
+    /* Flat sage with dark text (the agency's colours). Two-line structure:    */
+    /* bold serif main line + mono sub-line, with a hover lift.                */
+    .cta-button {
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 5px;
+      width: fit-content;
+      max-width: 100%;
+      background-color: var(--sage);
+      color: #16241b;
+      padding: 16px 30px;
+      border-radius: 14px;
+      text-decoration: none;
+      box-shadow: 0 18px 45px -18px rgba(177, 247, 204, 0.6);
+      transition: transform 0.18s ease, box-shadow 0.18s ease;
+    }
+
+    .cta-button:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 24px 55px -16px rgba(177, 247, 204, 0.7);
+    }
+
+    .cta-button:focus-visible {
+      outline: 3px solid var(--ink);
+      outline-offset: 4px;
+    }
+
+    .cta-main {
+      font-family: "Roboto Slab", serif;
+      font-weight: 900;
+      font-size: 1.85rem;
+      line-height: 1.12;
+      color: #16241b;
+      white-space: nowrap;
+    }
+
+    .cta-sub {
+      font-family: "JetBrains Mono", monospace;
+      font-weight: 500;
+      font-size: 0.6526rem;
+      color: rgba(22, 36, 27, 0.72);
+      white-space: nowrap;
+    }
+
+    /* In-slot variant: fills the card width and lets the longer sub-line wrap. */
+    .cta-button.cta-sm {
+      padding: 13px 26px;
+      gap: 4px;
+      width: 100%;
+      max-width: 100%;
+    }
+    .cta-button.cta-sm .cta-main {
+      font-size: 1.041rem;
+    }
+    .cta-button.cta-sm .cta-sub {
+      font-size: 0.5165rem;
+      color: rgba(22, 36, 27, 0.88);
+      white-space: normal;
+      text-align: center;
+    }
+
+    /* ============ SECTIONS RENDER IMMEDIATELY (reveal-on-scroll off) ============ */
+    /* The scroll-triggered reveal is disabled: .fade-up no longer starts hidden, */
+    /* so every section paints at full opacity / final position on first load with */
+    /* no dependence on scrolling. (.is-visible kept as a harmless no-op.)          */
+    .fade-up {
+      opacity: 1;
+      transform: none;
+    }
+    .fade-up.is-visible {
+      opacity: 1;
+      transform: none;
+    }
+
+    /* ============ LIGHTBOX (in-page asset viewer) ============ */
+    /* Lives OUTSIDE the scaled .page so it fills the real viewport and its    */
+    /* position:fixed is relative to the screen (a transformed ancestor would  */
+    /* otherwise become its containing block).                                 */
+    .lightbox {
+      position: fixed;
+      inset: 0;
+      z-index: 50;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      opacity: 0;
+      transition: opacity 0.16s ease;
+    }
+    .lightbox[hidden] {
+      display: none;
+    }
+    .lightbox.is-open {
+      opacity: 1;
+    }
+
+    .lightbox-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(8, 10, 9, 0.86);
+      -webkit-backdrop-filter: blur(4px);
+      backdrop-filter: blur(4px);
+    }
+
+    .lightbox-panel {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+
+    .lightbox-body {
+      pointer-events: auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      max-width: 92vw;
+      max-height: 88vh;
+    }
+    .lightbox-body img {
+      max-width: 92vw;
+      max-height: 88vh;
+      width: auto;
+      height: auto;
+      object-fit: contain;
+      border-radius: 12px;
+      border: 1px solid rgba(177, 247, 204, 0.35);
+      box-shadow: 0 30px 80px -30px rgba(0, 0, 0, 0.9);
+    }
+    .lightbox-body iframe {
+      width: min(1100px, 92vw);
+      height: 88vh;
+      border: 1px solid rgba(177, 247, 204, 0.35);
+      border-radius: 12px;
+      background: #ffffff;
+      box-shadow: 0 30px 80px -30px rgba(0, 0, 0, 0.9);
+    }
+    /* Tall screenshot viewer (landing pages): zoomed in, vertical scroll. */
+    /* Shrink-wrap the viewer to the image width (fit-content) so there is no  */
+    /* blank space either side when a landing-page screenshot is narrower than */
+    /* the viewport. The image width is set by JS; the box hugs it (up to 92vw).*/
+    .img-scroll {
+      pointer-events: auto;
+      width: -moz-fit-content;
+      width: fit-content;
+      max-width: 92vw;
+      max-height: 88vh;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      border-radius: 12px;
+      border: 1px solid rgba(177, 247, 204, 0.35);
+      background: #ffffff;
+      box-shadow: 0 30px 80px -30px rgba(0, 0, 0, 0.9);
+    }
+    .img-scroll img {
+      display: block;
+      height: auto;
+      max-width: none;
+      max-height: none;
+    }
+
+    /* Multi-page PDF viewer: a scrollable stack of rendered pages (PDF.js). */
+    .pdf-scroll {
+      pointer-events: auto;
+      position: relative;
+      width: min(900px, 92vw);
+      max-height: 88vh;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      border-radius: 12px;
+      border: 1px solid rgba(177, 247, 204, 0.35);
+      background: #ffffff;
+      box-shadow: 0 30px 80px -30px rgba(0, 0, 0, 0.9);
+    }
+    .pdf-ph {
+      display: block;
+      width: 100%;
+      background: #ffffff;
+    }
+    .pdf-ph + .pdf-ph {
+      border-top: 1px solid #e5e5e5;
+    }
+    .pdf-page {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+
+    /* Brief "Loading…" note shown while PDF.js is fetched on first PDF open. */
+    .lb-loading {
+      pointer-events: auto;
+      font-family: "JetBrains Mono", monospace;
+      font-weight: 500;
+      letter-spacing: 0.12em;
+      color: var(--ink);
+      opacity: 0.85;
+    }
+
+    .lightbox-close,
+    .lightbox-prev,
+    .lightbox-next {
+      position: absolute;
+      pointer-events: auto;
+      z-index: 2;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid rgba(177, 247, 204, 0.35);
+      background-color: rgba(20, 20, 20, 0.82);
+      color: var(--ink);
+      cursor: pointer;
+      font-family: "JetBrains Mono", monospace;
+      transition: transform 0.15s ease, background-color 0.15s ease, color 0.15s ease;
+    }
+    .lightbox-close {
+      top: 0;
+      right: 0;
+      width: 46px;
+      height: 46px;
+      border-radius: 9999px;
+      font-size: 1.6rem;
+      line-height: 1;
+    }
+    .lightbox-prev,
+    .lightbox-next {
+      top: 50%;
+      transform: translateY(-50%);
+      width: 52px;
+      height: 52px;
+      border-radius: 9999px;
+      font-size: 1.9rem;
+      line-height: 1;
+    }
+    .lightbox-prev {
+      left: 0;
+    }
+    .lightbox-next {
+      right: 0;
+    }
+    .lightbox-close:hover,
+    .lightbox-prev:hover,
+    .lightbox-next:hover {
+      background-color: var(--sage);
+      color: #16241b;
+    }
+    .lightbox-close:hover {
+      transform: scale(1.06);
+    }
+    .lightbox-close:focus-visible,
+    .lightbox-prev:focus-visible,
+    .lightbox-next:focus-visible {
+      outline: 3px solid var(--sage);
+      outline-offset: 3px;
+    }
+
+    .lightbox-count {
+      position: absolute;
+      pointer-events: none;
+      bottom: 2px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-family: "JetBrains Mono", monospace;
+      font-weight: 500;
+      font-size: 0.8rem;
+      letter-spacing: 0.12em;
+      color: var(--muted);
+    }
+
+    /* Prev / next / counter only appear for carousels. */
+    .lightbox:not(.is-carousel) .lightbox-prev,
+    .lightbox:not(.is-carousel) .lightbox-next,
+    .lightbox:not(.is-carousel) .lightbox-count {
+      display: none;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html {
+        scroll-behavior: auto;
+      }
+      .fade-up {
+        opacity: 1;
+        transform: none;
+        transition: none;
+      }
+      .cta-button,
+      .booking,
+      .calendar-close,
+      .info-btn,
+      .infobox,
+      .infobox-close,
+      .lightbox,
+      .lightbox-close,
+      .lightbox-prev,
+      .lightbox-next {
+        transition: none;
+      }
+    }
+
+    /* ============ DELIVERABLE PREVIEW ============ */
+    /* Injected between the sample label and the CTA; aria-hidden +              */
+    /* pointer-events:none, so the CTA stays the only way to open the lightbox.  */
+    /* Two treatments, both in a rounded-corner card:                           */
+    /*   • Image instances (.jpg/.png: image, carousel, landing page) get the    */
+    /*     obscured look — blur + dark tint/vignette + framed card (.dp-obscure). */
+    /*   • PDF instances (the pre-styled Flat/Stack/Deck images) OMIT .dp-obscure */
+    /*     so they get NO blur/vignette — just the same rounded-corner card.      */
+    /* Landing pages crop to a 4:3 vertical card (top of the page, cover);        */
+    /* everything else uses its natural aspect ratio (set from the image in JS).  */
+    .dp-preview {
+      width: 100%;
+      margin-top: 1.5rem;
+      position: relative;
+      pointer-events: none;
+    }
+    .dp-win {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 1 / 1;   /* placeholder until the image's natural ratio is set (JS) */
+      border-radius: 12px;   /* rounded corners on every preview card */
+      overflow: hidden;
+    }
+    .dp-media {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    /* Landing pages (tall screenshots): 4:3 vertical card, top-cropped. */
+    .dp-win.dp-scroll { aspect-ratio: 3 / 4; }
+    .dp-win.dp-scroll .dp-media { object-position: top center; transform-origin: top center; }
+    /* Image-instance previews: the original obscured treatment (frame + blur +  */
+    /* vignette). PDF previews omit .dp-obscure, so they get none of this.        */
+    .dp-win.dp-obscure {
+      border: 1px solid var(--hairline);
+      background: var(--card);
+      box-shadow: inset 0 2px 12px rgba(0, 0, 0, 0.4);
+    }
+    .dp-win.dp-obscure .dp-media {
+      filter: blur(var(--dp-blur, 5px));
+      transform: scale(1.05);  /* hide the blur's transparent halo at the edges */
+    }
+    .dp-win.dp-obscure::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      pointer-events: none;
+      background:
+        radial-gradient(ellipse at center, rgba(0, 0, 0, 0) 42%, rgba(0, 0, 0, 0.55) 100%),
+        rgba(0, 0, 0, var(--dp-tint, 0.35));
+    }
+
+    /* ============ PART-INSTANCE VERTICAL SLIDER ============ */
+    /* A deliverable TYPE that has PARTS lays its parts out as columns across    */
+    /* the type (the existing horizontal slider). Within each part column, its   */
+    /* instance cards are wrapped in a fixed ONE-CARD-TALL vertical scroller, so  */
+    /* the parts row never grows with instance count: one instance shows at a     */
+    /* time and the user scrolls vertically (snap) through the rest, with a small */
+    /* down-arrow "scroll for more" hint. The exact one-card height is set per    */
+    /* column in JS. Types with NO parts keep their horizontal instance slider.   */
+    /* Part widget frame (each part column): 4:3 vertical, with the sage strip.  */
+    /* align-self:center stops the flex row from stretching it, so the 3/4 ratio */
+    /* actually applies. Padding insets the title + instance column from the     */
+    /* frame edge; the part title provides its own equal top/bottom padding.     */
+    .deliverables-slider > div {
+      aspect-ratio: 3 / 4;
+      align-self: center;
+      overflow: hidden;         /* the 3/4 frame holds regardless of content */
+      display: flex;
+      flex-direction: column;
+      border: 1px solid var(--sage);
+      border-radius: 16px;
+      padding: 0 1rem 1.25rem;
+    }
+    .deliverables-slider > div > .sample-label { padding: 1.25rem 0; margin: 0; flex: 0 0 auto; }
+    .part-vwrap {
+      position: relative;
+      margin-top: 0; /* the part title's own bottom padding provides the gap */
+      flex: 1 1 auto;  /* fill the remaining height of the fixed 3/4 frame */
+      min-height: 0;
+      display: flex;
+    }
+    .part-vscroll {
+      flex: 1 1 auto;
+      min-height: 0;
+      overflow-y: auto;
+      overflow-x: hidden;
+      scroll-snap-type: none;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(177, 247, 204, 0.4) transparent;
+    }
+    .part-vscroll::-webkit-scrollbar { width: 8px; }
+    .part-vscroll::-webkit-scrollbar-track { background: transparent; }
+    .part-vscroll::-webkit-scrollbar-thumb {
+      background-color: rgba(177, 247, 204, 0.3);
+      border-radius: 9999px;
+    }
+    /* Cards fill the padded part column (so each instance's preview and CTA span
+       the same width), snap one at a time, and keep a gap above/below the next. */
+    .part-vscroll > .block-card { width: auto; margin-top: 0; }
+    .part-vscroll > .block-card + .block-card { margin-top: 1.5rem; }
+    /* Part-instance CTA matches every other cta-sm button — SAME text size and
+       full card width (never fit-content, so it never collapses to a pill). The
+       main line may wrap in a narrow column instead of stretching the box. */
+    .part-vscroll .cta-button.cta-sm { width: 100%; }
+    .part-vscroll .cta-button.cta-sm .cta-main { white-space: normal; font-size: 0.6567rem; } /* 0.5710 * 1.15 */
+    .part-vscroll .cta-button.cta-sm .cta-sub { font-size: 0.3258rem; }                       /* 0.2833 * 1.15 */
+    /* Single/Stack previews (Direct-to-camera + Sequences): size the preview by
+       the IMAGE itself — a full-width img at its natural height — so the preview
+       WIDTH always equals the card/CTA width. This overrides the JS-set inline
+       aspect-ratio box + absolute-fill media, which were leaving them narrower. */
+    .block-card[data-preview="Flat"] .dp-preview,
+    .block-card[data-preview="Stack"] .dp-preview { width: 100%; max-width: none; min-width: 0; }
+    .block-card[data-preview="Flat"] .dp-win,
+    .block-card[data-preview="Stack"] .dp-win {
+      width: 100%; max-width: none; min-width: 0;
+      aspect-ratio: auto !important;   /* drop the inline natural-ratio box */
+      height: auto;
+      /* No transform: scale here — it grew the box past its bounds and ate the
+         padding above/below (overlapping the label). The image fills the width
+         at its natural height and sits in its box with the clean 15px margins,
+         exactly like the image-instance previews. */
+    }
+    .block-card[data-preview="Flat"] .dp-media,
+    .block-card[data-preview="Stack"] .dp-media {
+      position: static !important;     /* flow the image so it drives the box width */
+      width: 100%;
+      height: auto;
+    }
+    /* 15px of padding above and below every part-instance preview (the CTA
+       wrapper's default top margin is zeroed so the gap below is exactly 15px). */
+    .part-vscroll .dp-preview { margin: 15px 0; }
+    .part-vscroll .block-card .mt-6 { margin-top: 0; }
+    /* "Scroll for more" affordance: a small sage down-arrow at the window's      */
+    /* bottom, fading out once the column is scrolled to its end. Absolutely      */
+    /* positioned (adds no height) and never intercepts clicks.                   */
+    .part-vmore {
+      position: absolute;
+      left: 50%;
+      bottom: 8px;
+      transform: translateX(-50%);
+      z-index: 4;
+      width: 22px;
+      height: 22px;
+      border-radius: 9999px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: var(--sage);
+      color: #16241b;
+      font-size: 0.8rem;
+      line-height: 1;
+      pointer-events: none;
+      box-shadow: 0 4px 12px -4px rgba(0, 0, 0, 0.55);
+      opacity: 0.9;
+      transition: opacity 0.2s ease;
+    }
+    .part-vwrap.part-at-end .part-vmore { opacity: 0; }
+  </style>
+
+  <script>
+    // Mobile / tablet uniform scale.
+    // Below 1024px the .page renders at a fixed design width (910px) and is
+    // scaled by (viewport / design width) so the phone shows an exact, smaller
+    // copy of the desktop layout. At >=1024px the CSS @media rule takes over
+    // (percentage width + 1.125 scale), so desktop is unaffected. Runs in the
+    // head so the scale is set before first paint (no flash / no overflow).
+    (function () {
+      var DESIGN_WIDTH = 910;
+      function setScale() {
+        document.documentElement.style.setProperty(
+          "--page-scale",
+          String(window.innerWidth / DESIGN_WIDTH)
+        );
+      }
+      setScale();
+      // rAF-throttle so rapid resize/orientation events coalesce to one write
+      // per frame instead of thrashing layout. Passive (never preventDefault).
+      var scaleTick = false;
+      function onResize() {
+        if (scaleTick) return;
+        scaleTick = true;
+        (window.requestAnimationFrame || function (f) { return setTimeout(f, 16); })(function () {
+          scaleTick = false;
+          setScale();
+        });
+      }
+      window.addEventListener("resize", onResize, { passive: true });
+      window.addEventListener("orientationchange", onResize, { passive: true });
+    })();
+  </script>
+
+  <!-- PDF.js is no longer loaded up front. It is fetched on demand the first -->
+  <!-- time a PDF deliverable is opened (see showPdf in the lightbox script), -->
+  <!-- so it costs nothing on initial page load. It still renders multi-page  -->
+  <!-- PDFs into the lightbox (a native <iframe> only shows page 1 on iOS).   -->
+</head>
+
+<body>
+  <!-- ============================================================= -->
+  <!-- ASSET WIRING                                                   -->
+  <!-- SHELL BUILD. Every showcase tile across BOTH funnels is wired    -->
+  <!-- but shipped BRACKETED as a [TOKEN], so each renders in its        -->
+  <!-- coming-soon state until an asset lands. To activate a tile, swap  -->
+  <!-- its [TOKEN] href (or data-lb-srcs for the Carousel) for the real  -->
+  <!-- asset path under:                                                 -->
+  <!--   Sample Deliverables/Paid Ads & Webinar Funnel/<Type>/<Instance> -->
+  <!-- (spaces %20-encoded, the "&" in each funnel folder name as %26).  -->
+  <!-- The coming-soon pass only disables a tile whose href still begins  -->
+  <!-- with a bracket "[", so removing it re-activates the tile.          -->
+  <!--                                                                 -->
+  <!-- ALREADY-LIVE slots (do not bracket):                            -->
+  <!--   Hero walkthrough video (self-hosted Video.mp4 at site root),  -->
+  <!--   Miro Client Results board, both Calendly links (discovery-    -->
+  <!--   call).                                                        -->
+  <!-- ============================================================= -->
+
+  <!-- ATMOSPHERE LAYERS -->
+  <div class="grid-overlay" aria-hidden="true"></div>
+  <div class="grain-overlay" aria-hidden="true"></div>
+
+  <div class="page-clip">
+  <div class="page">
+    <!-- ============================================================= -->
+    <!-- HERO -->
+    <!-- Spacing rhythm (hero gaps halved; the deliverables section keeps  -->
+    <!-- its larger doubled rhythm):                                       -->
+    <!--   One 28px step carries the whole hero: top-of-page -> eyebrow    -->
+    <!--   (pt-7), eyebrow -> headline (mt-7), headline -> subheadline     -->
+    <!--   (mt-7) and subheadline -> video (mt-7) are all equal, so the    -->
+    <!--   eyebrow and the subheadline each sit evenly in their own space. -->
+    <!--   40px (mt-10) for video -> button.                               -->
+    <!-- ============================================================= -->
+    <header class="pt-7 pb-0">
+      <div class="container-narrow">
+        <p class="eyebrow fade-up">For Dane:</p>
+
+        <h1 class="heading fade-up mt-7" style="font-size: 33.89276023875px;">
+          I've Spent <span style="color: var(--sage);">18 Hours</span> Working On Something<br />
+          Which Will Bring <em>Scalex AI</em><br />
+          An Extra <span style="color: var(--sage);">$60-100K Per Month</span><br />
+          In Under <u>8 Weeks</u> From Today
+        </h1>
+
+        <p class="body-copy fade-up mt-7" style="color: var(--muted); font-size: 1.2571rem;">
+          (legally binding agreement)
+        </p>
+
+        <!-- HERO VIDEO FRAME -->
+        <!-- Self-hosted walkthrough (720p MP4, faststart, pulled from the       -->
+        <!-- Wistia master and served from the site root). Native <video> plays  -->
+        <!-- progressively so it starts instantly on desktop — no HLS engine.    -->
+        <!-- Native controls + fullscreen; plays at 1.5x with pitch preserved    -->
+        <!-- via the hero-video script below.                                    -->
+        <div class="video-frame fade-up mt-7">
+          <div class="vplayer" id="vplayer" tabindex="0" aria-label="Walkthrough video">
+            <video
+              id="hero-video"
+              src="Video.mp4"
+              poster="Thumbnail.png"
+              playsinline
+              preload="metadata">
+              Your browser does not support embedded video. You can
+              <a href="Video.mp4">download the walkthrough</a> instead.
+            </video>
+
+            <!-- Big centre play button (paused state) -->
+            <button class="vp-bigplay" id="vp-bigplay" type="button" aria-label="Play video">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"></path></svg>
+            </button>
+
+            <!-- Control bar: play/pause · draggable playbar · fullscreen -->
+            <div class="vp-bar" id="vp-bar">
+              <button class="vp-btn vp-play" id="vp-play" type="button" aria-label="Play / pause">
+                <svg class="vp-i-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"></path></svg>
+                <svg class="vp-i-pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 5h4v14H6zM14 5h4v14h-4z"></path></svg>
+              </button>
+              <div class="vp-progress" id="vp-progress" role="slider" aria-label="Seek"
+                   aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" tabindex="0">
+                <div class="vp-track">
+                  <div class="vp-buffered" id="vp-buffered"></div>
+                  <div class="vp-played" id="vp-played"></div>
+                  <div class="vp-handle" id="vp-handle"></div>
+                </div>
+              </div>
+              <button class="vp-btn vp-fs" id="vp-fs" type="button" aria-label="Fullscreen">
+                <svg class="vp-i-fs" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3H3v4h2V5h2V3zm10 0v2h2v2h2V3h-4zM5 17H3v4h4v-2H5v-2zm14 0v2h-2v2h4v-4h-2z"></path></svg>
+                <svg class="vp-i-exitfs" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5H7v2H5v2h4V5zm6 0v4h4V7h-2V5h-2zM5 15v2h2v2h2v-4H5zm10 0v4h2v-2h2v-2h-4z"></path></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- CALL TO ACTION -->
+        <div class="fade-up mt-10">
+          <!-- CTA: opens the booking modal (JS). The href is a no-JS fallback  -->
+          <!-- that opens the Calendly page in a new tab.                        -->
+          <a href="{{CALENDLY}}"
+             class="cta-button" id="cta-book"
+             aria-controls="calendar-widget" aria-expanded="false"
+             target="_blank" rel="noopener noreferrer">
+            <span class="cta-main">I'll Hear You Out</span>
+            <span class="cta-sub">Click Here To Schedule A Discovery Call…</span>
+          </a>
+        </div>
+
+      </div>
+    </header>
+
+    <!-- ============================================================= -->
+    <!-- SAMPLE DELIVERABLES -->
+    <!-- TWO-FUNNEL SHOWCASE. One overarching funnel widget (Section) per  -->
+    <!-- funnel; inside each, one sub-widget per deliverable Type, each     -->
+    <!-- holding its Instance cards. Every Section / Type / Instance widget -->
+    <!-- has a top-left info button whose popup text is driven by the INFO  -->
+    <!-- map in the script below (single source of truth, keyed by          -->
+    <!-- data-info). In this shell every tile is a placeholder token shown  -->
+    <!-- as "Coming Soon", or "Asset Pending" for tiles that carry          -->
+    <!-- data-asset-pending.                                                -->
+    <!-- ============================================================= -->
+    <section class="pt-10 pb-10">
+      <div class="container-narrow">
+        <h2 class="heading fade-up" style="font-size: 43.47px;">
+          Here Are The Sample Deliverables:
+        </h2>
+
+        <div class="deliverables-scale">
+
+        <!-- ===================================================== -->
+        <!-- SECTION 1 · PAID ADS & WEBINAR FUNNEL (PAAWF) -->
+        <!-- ===================================================== -->
+        <div class="row-widget fade-up mt-10">
+          <button class="info-btn" type="button" data-info="sec-cold"><span aria-hidden="true">i</span></button>
+          <h3 class="row-heading">Paid Ads &amp; Webinar Funnel</h3>
+
+          <!-- Type: Ad Creatives — instances grouped into two named parts     -->
+          <!-- (Static, Video) as 250px slider columns, exactly like the        -->
+          <!-- Sequences type. Each part is a column headed by its name + info   -->
+          <!-- button, holding its instance cards; the assets are unchanged,     -->
+          <!-- only regrouped and relabelled to their final names.               -->
+          <div class="sub-widget mt-8">
+            <button class="info-btn" type="button" data-info="type-cold-ad"><span aria-hidden="true">i</span></button>
+            <h4 class="sub-heading">Ad Creatives</h4>
+            <div class="deliverables-slider mt-6">
+
+              <!-- Static -->
+              <div style="position: relative; flex: 0 0 auto; width: 250px; scroll-snap-align: center;">
+                <button class="info-btn" type="button" data-info="type-cold-ad-static"><span aria-hidden="true">i</span></button>
+                <p class="sample-label" style="font-size: 1.02rem;">Static</p>
+
+                <!-- Square (was "Single") -->
+                <article class="block-card mt-6">
+                  <button class="info-btn" type="button" data-info="inst-cold-ad-square"><span aria-hidden="true">i</span></button>
+                  <p class="sample-label">Square</p>
+                  <div class="mt-6">
+                    <a class="cta-button cta-sm"
+                       href="Sample%20Deliverables/Paid%20Ads%20%26%20Webinar%20Funnel/Ad%20Creatives/Static/Square.png"
+                       data-lb data-lb-type="image" data-lb-title="Square ad creative"
+                       target="_blank" rel="noopener noreferrer">
+                      <span class="cta-main">Get A Closer View</span>
+                      <span class="cta-sub">Click here to open it up...</span>
+                    </a>
+                  </div>
+                </article>
+
+                <!-- Rectangle (was "Story") -->
+                <article class="block-card mt-6">
+                  <button class="info-btn" type="button" data-info="inst-cold-ad-rectangle"><span aria-hidden="true">i</span></button>
+                  <p class="sample-label">Rectangle</p>
+                  <div class="mt-6">
+                    <a class="cta-button cta-sm"
+                       href="Sample%20Deliverables/Paid%20Ads%20%26%20Webinar%20Funnel/Ad%20Creatives/Static/Rectangle.png"
+                       data-lb data-lb-type="image" data-lb-title="Rectangle ad creative"
+                       target="_blank" rel="noopener noreferrer">
+                      <span class="cta-main">Get A Closer View</span>
+                      <span class="cta-sub">Click here to open it up...</span>
+                    </a>
+                  </div>
+                </article>
+
+                <!-- Carousel -->
+                <article class="block-card mt-6">
+                  <button class="info-btn" type="button" data-info="inst-cold-ad-carousel"><span aria-hidden="true">i</span></button>
+                  <p class="sample-label">Carousel</p>
+                  <div class="mt-6">
+                    <a class="cta-button cta-sm"
+                       href="Sample%20Deliverables/Paid%20Ads%20%26%20Webinar%20Funnel/Ad%20Creatives/Static/Carousel/Slide%201.png"
+                       data-lb data-lb-type="carousel" data-lb-title="Carousel ad creative"
+                       data-lb-srcs="Sample%20Deliverables/Paid%20Ads%20%26%20Webinar%20Funnel/Ad%20Creatives/Static/Carousel/Slide%201.png|Sample%20Deliverables/Paid%20Ads%20%26%20Webinar%20Funnel/Ad%20Creatives/Static/Carousel/Slide%202.png|Sample%20Deliverables/Paid%20Ads%20%26%20Webinar%20Funnel/Ad%20Creatives/Static/Carousel/Slide%203.png|Sample%20Deliverables/Paid%20Ads%20%26%20Webinar%20Funnel/Ad%20Creatives/Static/Carousel/Slide%204.png|Sample%20Deliverables/Paid%20Ads%20%26%20Webinar%20Funnel/Ad%20Creatives/Static/Carousel/Slide%205.png"
+                       target="_blank" rel="noopener noreferrer">
+                      <span class="cta-main">Get A Closer View</span>
+                      <span class="cta-sub">Click here to open it up...</span>
+                    </a>
+                  </div>
+                </article>
+              </div>
+
+              <!-- Video -->
+              <div style="position: relative; flex: 0 0 auto; width: 250px; scroll-snap-align: center;">
+                <button class="info-btn" type="button" data-info="type-cold-ad-video-part"><span aria-hidden="true">i</span></button>
+                <p class="sample-label" style="font-size: 1.02rem;">Video</p>
+
+                <!-- Direct-to-camera (was "Video") -->
+                <article class="block-card mt-6">
+                  <button class="info-btn" type="button" data-info="inst-cold-ad-dtc"><span aria-hidden="true">i</span></button>
+                  <p class="sample-label">Talking-head</p>
+                  <div class="mt-6">
+                    <a class="cta-button cta-sm"
+                       href="Sample%20Deliverables/Paid%20Ads%20%26%20Webinar%20Funnel/Ad%20Creatives/Video/Direct-to-camera.pdf"
+                       data-lb data-lb-type="pdf" data-lb-title="Talking-head ad script"
+                       target="_blank" rel="noopener noreferrer">
+                      <span class="cta-main">Get A Closer View</span>
+                      <span class="cta-sub">Click here to open it up...</span>
+                    </a>
+                  </div>
+                </article>
+              </div>
+
+            </div>
+            <p class="slider-hint mt-4">Swipe to browse &rarr;</p>
+          </div>
+
+          <!-- Type: Landing Pages -->
+          <div class="sub-widget mt-6">
+            <button class="info-btn" type="button" data-info="type-cold-lp"><span aria-hidden="true">i</span></button>
+            <h4 class="sub-heading">Landing Pages</h4>
+            <div class="deliverables-slider mt-6">
+
+              <!-- Registration -->
+              <article class="block-card">
+                <button class="info-btn" type="button" data-info="inst-cold-lp-registration"><span aria-hidden="true">i</span></button>
+                <p class="sample-label">Registration</p>
+                <div class="mt-6">
+                  <a class="cta-button cta-sm"
+                     href="Sample%20Deliverables/Paid%20Ads%20%26%20Webinar%20Funnel/Landing%20Pages/Registration.png"
+                     data-lb data-lb-type="scroll-image" data-lb-title="Registration page"
+                     target="_blank" rel="noopener noreferrer">
+                    <span class="cta-main">Get A Closer View</span>
+                    <span class="cta-sub">Click here to open it up...</span>
+                  </a>
+                </div>
+              </article>
+
+              <!-- Thank You -->
+              <article class="block-card">
+                <button class="info-btn" type="button" data-info="inst-cold-lp-thankyou"><span aria-hidden="true">i</span></button>
+                <p class="sample-label">Thank You</p>
+                <div class="mt-6">
+                  <a class="cta-button cta-sm"
+                     href="Sample%20Deliverables/Paid%20Ads%20%26%20Webinar%20Funnel/Landing%20Pages/Thank%20You.png"
+                     data-lb data-lb-type="scroll-image" data-lb-title="Thank you page"
+                     target="_blank" rel="noopener noreferrer">
+                    <span class="cta-main">Get A Closer View</span>
+                    <span class="cta-sub">Click here to open it up...</span>
+                  </a>
+                </div>
+              </article>
+
+              <!-- Replay -->
+              <article class="block-card">
+                <button class="info-btn" type="button" data-info="inst-cold-lp-replay"><span aria-hidden="true">i</span></button>
+                <p class="sample-label">Replay</p>
+                <div class="mt-6">
+                  <a class="cta-button cta-sm"
+                     href="Sample%20Deliverables/Paid%20Ads%20%26%20Webinar%20Funnel/Landing%20Pages/Replay.png"
+                     data-lb data-lb-type="scroll-image" data-lb-title="Replay page"
+                     target="_blank" rel="noopener noreferrer">
+                    <span class="cta-main">Get A Closer View</span>
+                    <span class="cta-sub">Click here to open it up...</span>
+                  </a>
+                </div>
+              </article>
+
+              <!-- Confirmation -->
+              <article class="block-card">
+                <button class="info-btn" type="button" data-info="inst-cold-lp-confirmation"><span aria-hidden="true">i</span></button>
+                <p class="sample-label">Confirmation</p>
+                <div class="mt-6">
+                  <a class="cta-button cta-sm"
+                     href="Sample%20Deliverables/Paid%20Ads%20%26%20Webinar%20Funnel/Landing%20Pages/Confirmation.png"
+                     data-lb data-lb-type="scroll-image" data-lb-title="Confirmation page"
+                     target="_blank" rel="noopener noreferrer">
+                    <span class="cta-main">Get A Closer View</span>
+                    <span class="cta-sub">Click here to open it up...</span>
+                  </a>
+                </div>
+              </article>
+
+            </div>
+            <p class="slider-hint mt-4">Swipe to browse &rarr;</p>
+          </div>
+
+          <!-- Type: Sequences — three type groups (Pre-Webinar, Post-Webinar, -->
+          <!-- Pre-Call) as horizontal slider items. Each group is a 250px slider  -->
+          <!-- column headed by its type name, holding a vertical stack of its     -->
+          <!-- Email + WhatsApp Group instances. Every instance is its own         -->
+          <!-- block-card slot, identical to the instances elsewhere; the names    -->
+          <!-- stay bare because the column heading already names the type.        -->
+          <div class="sub-widget mt-6">
+            <button class="info-btn" type="button" data-info="type-cold-seq"><span aria-hidden="true">i</span></button>
+            <h4 class="sub-heading">Sequences</h4>
+            <div class="deliverables-slider mt-6">
+
+              <!-- Pre-Webinar -->
+              <div style="position: relative; flex: 0 0 auto; width: 250px; scroll-snap-align: center;">
+                <button class="info-btn" type="button" data-info="type-cold-seq-prewebinar"><span aria-hidden="true">i</span></button>
+                <p class="sample-label" style="font-size: 1.02rem;">Pre-Webinar</p>
+
+                <article class="block-card mt-6">
+                  <button class="info-btn" type="button" data-info="inst-cold-seq-prewebinar-email"><span aria-hidden="true">i</span></button>
+                  <p class="sample-label">Email</p>
+                  <div class="mt-6">
+                    <a class="cta-button cta-sm"
+                       href="Sample%20Deliverables/Paid%20Ads%20%26%20Webinar%20Funnel/Sequences/Pre-Webinar/Email.pdf"
+                       data-lb data-lb-type="pdf" data-lb-title="Pre-webinar email sequence"
+                       target="_blank" rel="noopener noreferrer">
+                      <span class="cta-main">Get A Closer View</span>
+                      <span class="cta-sub">Click here to open it up...</span>
+                    </a>
+                  </div>
+                </article>
+
+                <article class="block-card mt-6">
+                  <button class="info-btn" type="button" data-info="inst-cold-seq-prewebinar-whatsapp"><span aria-hidden="true">i</span></button>
+                  <p class="sample-label">WhatsApp Group</p>
+                  <div class="mt-6">
+                    <a class="cta-button cta-sm"
+                       href="Sample%20Deliverables/Paid%20Ads%20%26%20Webinar%20Funnel/Sequences/Pre-Webinar/WhatsApp%20Group.pdf"
+                       data-lb data-lb-type="pdf" data-lb-title="Pre-webinar WhatsApp group messages"
+                       target="_blank" rel="noopener noreferrer">
+                      <span class="cta-main">Get A Closer View</span>
+                      <span class="cta-sub">Click here to open it up...</span>
+                    </a>
+                  </div>
+                </article>
+              </div>
+
+              <!-- Post-Webinar -->
+              <div style="position: relative; flex: 0 0 auto; width: 250px; scroll-snap-align: center;">
+                <button class="info-btn" type="button" data-info="type-cold-seq-postwebinar"><span aria-hidden="true">i</span></button>
+                <p class="sample-label" style="font-size: 1.02rem;">Post-Webinar</p>
+
+                <article class="block-card mt-6">
+                  <button class="info-btn" type="button" data-info="inst-cold-seq-postwebinar-email"><span aria-hidden="true">i</span></button>
+                  <p class="sample-label">Email</p>
+                  <div class="mt-6">
+                    <a class="cta-button cta-sm"
+                       href="Sample%20Deliverables/Paid%20Ads%20%26%20Webinar%20Funnel/Sequences/Post-Webinar/Email.pdf"
+                       data-lb data-lb-type="pdf" data-lb-title="Post-webinar email sequence"
+                       target="_blank" rel="noopener noreferrer">
+                      <span class="cta-main">Get A Closer View</span>
+                      <span class="cta-sub">Click here to open it up...</span>
+                    </a>
+                  </div>
+                </article>
+
+                <article class="block-card mt-6">
+                  <button class="info-btn" type="button" data-info="inst-cold-seq-postwebinar-whatsapp"><span aria-hidden="true">i</span></button>
+                  <p class="sample-label">WhatsApp Group</p>
+                  <div class="mt-6">
+                    <a class="cta-button cta-sm"
+                       href="Sample%20Deliverables/Paid%20Ads%20%26%20Webinar%20Funnel/Sequences/Post-Webinar/WhatsApp%20Group.pdf"
+                       data-lb data-lb-type="pdf" data-lb-title="Post-webinar WhatsApp group messages"
+                       target="_blank" rel="noopener noreferrer">
+                      <span class="cta-main">Get A Closer View</span>
+                      <span class="cta-sub">Click here to open it up...</span>
+                    </a>
+                  </div>
+                </article>
+              </div>
+
+              <!-- Pre-Call -->
+              <div style="position: relative; flex: 0 0 auto; width: 250px; scroll-snap-align: center;">
+                <button class="info-btn" type="button" data-info="type-cold-seq-precall"><span aria-hidden="true">i</span></button>
+                <p class="sample-label" style="font-size: 1.02rem;">Pre-Call</p>
+
+                <article class="block-card mt-6">
+                  <button class="info-btn" type="button" data-info="inst-cold-seq-precall-email"><span aria-hidden="true">i</span></button>
+                  <p class="sample-label">Email</p>
+                  <div class="mt-6">
+                    <a class="cta-button cta-sm"
+                       href="Sample%20Deliverables/Paid%20Ads%20%26%20Webinar%20Funnel/Sequences/Pre-Call/Email.pdf"
+                       data-lb data-lb-type="pdf" data-lb-title="Pre-call email sequence"
+                       target="_blank" rel="noopener noreferrer">
+                      <span class="cta-main">Get A Closer View</span>
+                      <span class="cta-sub">Click here to open it up...</span>
+                    </a>
+                  </div>
+                </article>
+
+                <article class="block-card mt-6">
+                  <button class="info-btn" type="button" data-info="inst-cold-seq-precall-whatsapp"><span aria-hidden="true">i</span></button>
+                  <p class="sample-label">WhatsApp Group</p>
+                  <div class="mt-6">
+                    <a class="cta-button cta-sm"
+                       href="Sample%20Deliverables/Paid%20Ads%20%26%20Webinar%20Funnel/Sequences/Pre-Call/WhatsApp%20Group.pdf"
+                       data-lb data-lb-type="pdf" data-lb-title="Pre-call WhatsApp group messages"
+                       target="_blank" rel="noopener noreferrer">
+                      <span class="cta-main">Get A Closer View</span>
+                      <span class="cta-sub">Click here to open it up...</span>
+                    </a>
+                  </div>
+                </article>
+              </div>
+
+            </div>
+            <p class="slider-hint mt-4">Swipe to browse &rarr;</p>
+          </div>
+
+          <!-- Type: Webinar -->
+          <div class="sub-widget mt-6">
+            <button class="info-btn" type="button" data-info="type-cold-webinar"><span aria-hidden="true">i</span></button>
+            <h4 class="sub-heading">Webinar</h4>
+            <div class="deliverables-slider is-single mt-6">
+
+              <!-- Slideshow -->
+              <article class="block-card">
+                <button class="info-btn" type="button" data-info="inst-cold-webinar-slideshow"><span aria-hidden="true">i</span></button>
+                <p class="sample-label">Slideshow</p>
+                <div class="mt-6">
+                  <a class="cta-button cta-sm"
+                     href="Sample%20Deliverables/Paid%20Ads%20%26%20Webinar%20Funnel/Webinar/Slideshow.pdf"
+                     data-lb data-lb-type="pdf" data-lb-title="Webinar slideshow"
+                     target="_blank" rel="noopener noreferrer">
+                    <span class="cta-main">Get A Closer View</span>
+                    <span class="cta-sub">Click here to open it up...</span>
+                  </a>
+                </div>
+              </article>
+
+            </div>
+          </div>
+
+        </div>
+
+        </div>
+
+      </div>
+    </section>
+
+    <section class="pb-10">
+      <div class="container-narrow">
+        <h2 class="heading fade-up" style="font-size: 47.61px;">
+          Here Are My Client Results:
+        </h2>
+
+        <div class="deliverables-scale">
+          <div class="row-widget board-widget fade-up mt-10">
+            <!-- The board fills this widget as a flush 4:3 frame (no padding). -->
+            <!-- iframe absolutely filling it, so the board scales with the      -->
+            <!-- widget width and never overflows / clips on mobile.             -->
+            <div class="miro-frame">
+              <!-- Self-contained homemade board: drag to pan, wheel/pinch to    -->
+              <!-- zoom, bounded to the image + margin (see the board script).    -->
+              <div class="board" id="results-board" role="img" aria-label="Client results board">
+                <img class="board-img" id="results-board-img"
+                     src="Social%20Proof.PNG" alt="Client results board" draggable="false" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+  </div>
+  </div>
+
+  <!-- ============ INFO POPUP (rendered outside the scaled .page) ============ -->
+  <div class="infobox" id="infobox" role="dialog" aria-modal="true"
+       aria-labelledby="infobox-title" aria-describedby="infobox-desc" hidden>
+    <div class="infobox-backdrop"></div>
+    <div class="infobox-panel">
+      <button class="infobox-close" type="button" aria-label="Close information">&times;</button>
+      <h3 class="infobox-title" id="infobox-title"></h3>
+      <p class="infobox-desc" id="infobox-desc"></p>
+    </div>
+  </div>
+
+  <!-- ============ LIGHTBOX (rendered outside the scaled .page) ============ -->
+  <div class="lightbox" id="lightbox" role="dialog" aria-modal="true"
+       aria-label="Sample deliverable preview" hidden>
+    <div class="lightbox-backdrop" data-lb-dismiss></div>
+    <div class="lightbox-panel">
+      <button class="lightbox-close" type="button" aria-label="Close preview">&times;</button>
+      <button class="lightbox-prev" type="button" aria-label="Previous slide">&#8249;</button>
+      <div class="lightbox-body"></div>
+      <button class="lightbox-next" type="button" aria-label="Next slide">&#8250;</button>
+      <p class="lightbox-count" aria-live="polite"></p>
+    </div>
+  </div>
+
+  <!-- ============ BOOKING MODAL (rendered outside the scaled .page) ============ -->
+  <!-- Fixed overlay (same proven mechanism as the lightbox) holding the Calendly -->
+  <!-- embed in a card styled like the deliverable widgets. Living outside .page  -->
+  <!-- means opening it never grows or scroll-traps the clipped, scaled page.     -->
+  <!-- The Calendly embed src is injected lazily on first open (see the booking   -->
+  <!-- script) so the page load costs nothing until the CTA is clicked.           -->
+  <div class="booking" id="calendar-widget" role="dialog" aria-modal="true"
+       aria-label="Schedule a discovery call" hidden>
+    <div class="booking-backdrop" data-booking-dismiss></div>
+    <div class="booking-panel">
+      <div class="row-widget calendar-widget">
+        <button class="calendar-close" type="button" id="calendar-close"
+                aria-label="Close scheduling widget">&times;</button>
+        <div class="calendar-frame">
+          <!-- data-src holds the Calendly link; it is copied into src on first -->
+          <!-- open so the embed only loads when the CTA is clicked.            -->
+          <iframe
+            data-src="{{CALENDLY}}"
+            title="Schedule a discovery call with Carbon Consulting"
+            loading="lazy"
+            allow="fullscreen">
+          </iframe>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Reveal-on-scroll DISABLED: no IntersectionObserver. Every .fade-up element
+    // is marked visible immediately so the whole page is fully rendered on first
+    // paint with no scroll dependence. (The CSS already renders .fade-up at full
+    // opacity/final position; this just keeps the class state consistent.)
+    (function () {
+      document.querySelectorAll(".fade-up").forEach(function (el) {
+        el.classList.add("is-visible");
+      });
+    })();
+
+    // ===========================================================
+    // WIDGET INFO POPUP  —  SINGLE SOURCE OF TRUTH
+    // Every Section / Type / Instance widget carries a top-left info button
+    // with a data-info key. The canonical one-sentence description for each
+    // key lives ONLY in the INFO map below and is injected into the shared
+    // popup on click. Add/rename a widget => update this one map. The button's
+    // aria-label is also derived from the map so it can never drift.
+    // ===========================================================
+    (function () {
+      var INFO = {
+        // ============== SECTION 1 · PAAWF (cold) ==============
+        // --- Section ---
+        "sec-cold": {
+          title: "Paid Ads & Webinar Funnel",
+          body: "Cold traffic leads registering for and attending a free live masterclass which teaches them something and sells them on your offer before scheduling a sales call."
+        },
+        // --- Types ---
+        "type-cold-ad": {
+          title: "Ad Creatives",
+          body: "The assets that get shown to the cold traffic leads."
+        },
+        "type-cold-ad-static": {
+          title: "Static",
+          body: "A single-frame style of asset that gets shown to the cold traffic leads."
+        },
+        "type-cold-ad-video-part": {
+          title: "Video",
+          body: "A multiple-frame style of asset that gets shown to the cold traffic leads."
+        },
+        "type-cold-lp": {
+          title: "Landing Pages",
+          body: "The web pages that take cold traffic leads through each step."
+        },
+        "type-cold-seq": {
+          title: "Sequences",
+          body: "The automated emails and messages that cold traffic leads get sent."
+        },
+        "type-cold-seq-prewebinar": {
+          title: "Pre-Webinar",
+          body: "The automated emails and messages that cold traffic leads get sent between registering and attending the free live masterclass."
+        },
+        "type-cold-seq-postwebinar": {
+          title: "Post-Webinar",
+          body: "The automated emails and messages that cold traffic leads get sent after the free live masterclass has occurred."
+        },
+        "type-cold-seq-precall": {
+          title: "Pre-Call",
+          body: "The automated emails and messages that cold traffic leads get sent between scheduling and taking the sales call."
+        },
+        "type-cold-webinar": {
+          title: "Webinar",
+          body: "A free live masterclass that teaches an audience and sells them on your offer before scheduling a sales call."
+        },
+
+        // --- Instances: Cold › Ad Creatives › Static ---
+        "inst-cold-ad-square": {
+          title: "Square",
+          body: "A static asset consisting of a 1:1 individual image that gets shown to the cold traffic leads."
+        },
+        "inst-cold-ad-rectangle": {
+          title: "Rectangle",
+          body: "A static asset consisting of a 9:16 individual image that gets shown to the cold traffic leads."
+        },
+        "inst-cold-ad-carousel": {
+          title: "Carousel",
+          body: "A static asset consisting of 1:1 plural images that get shown to the cold traffic leads."
+        },
+        // --- Instances: Cold › Ad Creatives › Video ---
+        "inst-cold-ad-dtc": {
+          title: "Talking-head",
+          body: "A video asset consisting of a speaker talking straight to the viewer that gets shown to the cold traffic leads."
+        },
+
+        // --- Instances: Cold › Landing Pages ---
+        "inst-cold-lp-registration": {
+          title: "Registration",
+          body: "The webpage where cold traffic leads register for the free live masterclass."
+        },
+        "inst-cold-lp-thankyou": {
+          title: "Thank You",
+          body: "The webpage where cold traffic leads are prepared for the free live masterclass."
+        },
+        "inst-cold-lp-replay": {
+          title: "Replay",
+          body: "The webpage where cold traffic leads attend the free live masterclass after it's occurred."
+        },
+        "inst-cold-lp-confirmation": {
+          title: "Confirmation",
+          body: "The webpage where cold traffic leads are prepared for the sales call."
+        },
+
+        // --- Instances: Cold › Sequences (type description reworded per channel) ---
+        "inst-cold-seq-prewebinar-email": {
+          title: "Email",
+          body: "The automated emails that cold traffic leads get sent between registering and attending the free live masterclass."
+        },
+        "inst-cold-seq-prewebinar-whatsapp": {
+          title: "WhatsApp Group",
+          body: "The automated messages that cold traffic leads get sent between registering and attending the free live masterclass."
+        },
+        "inst-cold-seq-postwebinar-email": {
+          title: "Email",
+          body: "The automated emails that cold traffic leads get sent after the free live masterclass has occurred."
+        },
+        "inst-cold-seq-postwebinar-whatsapp": {
+          title: "WhatsApp Group",
+          body: "The automated messages that cold traffic leads get sent after the free live masterclass has occurred."
+        },
+        "inst-cold-seq-precall-email": {
+          title: "Email",
+          body: "The automated emails that cold traffic leads get sent between scheduling and taking the sales call."
+        },
+        "inst-cold-seq-precall-whatsapp": {
+          title: "WhatsApp Group",
+          body: "The automated messages that cold traffic leads get sent between scheduling and taking the sales call."
+        },
+
+        // --- Instances: Cold › Webinar ---
+        "inst-cold-webinar-slideshow": {
+          title: "Slideshow",
+          body: "The presentation deck behind the free live masterclass."
+        },
+      };
+
+      var box = document.getElementById("infobox");
+      if (!box) return;
+      var titleEl = box.querySelector(".infobox-title");
+      var descEl = box.querySelector(".infobox-desc");
+      var closeBtn = box.querySelector(".infobox-close");
+      var backdrop = box.querySelector(".infobox-backdrop");
+      var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      var lastFocus = null;
+
+      function openInfo(key, trigger) {
+        var info = INFO[key];
+        if (!info) return;
+        lastFocus = trigger || document.activeElement;
+        titleEl.textContent = info.title;
+        descEl.textContent = info.body;
+        box.hidden = false;
+        if (!reduce) {
+          // Force a reflow so the fade-in runs from 0.
+          void box.offsetWidth;
+        }
+        box.classList.add("is-open");
+        document.body.style.overflow = "hidden";
+        closeBtn.focus();
+        document.addEventListener("keydown", onKey);
+      }
+
+      function closeInfo() {
+        box.classList.remove("is-open");
+        function done() {
+          box.hidden = true;
+          document.body.style.overflow = "";
+          document.removeEventListener("keydown", onKey);
+          if (lastFocus && lastFocus.focus) lastFocus.focus();
+        }
+        if (reduce) done();
+        else setTimeout(done, 190);
+      }
+
+      function onKey(e) {
+        if (e.key === "Escape") {
+          e.preventDefault();
+          closeInfo();
+        } else if (e.key === "Tab") {
+          // Only the close button is focusable inside the popup — keep focus on it.
+          e.preventDefault();
+          closeBtn.focus();
+        }
+      }
+
+      // Wire every info button. stopPropagation keeps the click from ever
+      // reaching the widget's asset/preview behaviour.
+      document.querySelectorAll(".info-btn[data-info]").forEach(function (btn) {
+        var key = btn.getAttribute("data-info");
+        var info = INFO[key];
+        btn.setAttribute("aria-label", info ? "About " + info.title : "About this widget");
+        btn.addEventListener("click", function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+          openInfo(key, btn);
+        });
+      });
+
+      closeBtn.addEventListener("click", closeInfo);
+      backdrop.addEventListener("click", closeInfo);
+    })();
+
+    // ===========================================================
+    // COMING-SOON / ASSET-PENDING PLACEHOLDERS  (SHELL BUILD)
+    // Every showcase tile ships with its lightbox anchor fully wired but
+    // pointing at a bracketed [TOKEN]. Until that token is replaced with a real
+    // asset path, drop the tile into a quiet placeholder state and unbind it
+    // from the lightbox so it can't open a broken viewer. Tiles flagged
+    // data-asset-pending (canonical items added by the audit with no asset yet)
+    // read "Asset Pending"; the rest read "Coming Soon". This runs BEFORE the
+    // lightbox script below, so tiles it disables are never given click
+    // handlers. Backfilling later is a straight swap: replace the [TOKEN] in
+    // the href (or data-lb-srcs) with the asset path — the anchor then has no
+    // bracket, this pass skips it, and it behaves like a normal live tile.
+    (function () {
+      function pending(v) {
+        return !v || v.indexOf("[") === 0;
+      }
+      document.querySelectorAll("a[data-lb]").forEach(function (a) {
+        var href = a.getAttribute("href");
+        var isCarousel = a.getAttribute("data-lb-type") === "carousel";
+        var srcs = a.getAttribute("data-lb-srcs");
+        var unfilled = pending(href) || (isCarousel && pending(srcs));
+        if (!unfilled) return;
+        var label = a.hasAttribute("data-asset-pending") ? "Asset Pending" : "Coming Soon";
+        var card = a.closest(".block-card");
+        if (card) card.classList.add("is-coming-soon");
+        // Unbind from the lightbox and neutralise the anchor.
+        a.removeAttribute("data-lb");
+        a.removeAttribute("href");
+        a.setAttribute("aria-disabled", "true");
+        a.setAttribute("tabindex", "-1");
+        a.classList.add("is-disabled");
+        a.innerHTML =
+          '<span class="cs-label"><span class="cs-dot"></span>' + label + "</span>";
+      });
+    })();
+
+    // ===========================================================
+    // IN-PAGE LIGHTBOX
+    // Opens a deliverable (image / scroll-image / PDF / image carousel) in a
+    // full-viewport overlay instead of navigating away. Triggers are any
+    // <a data-lb>; each keeps a real href so it still works if JS is disabled.
+    // ===========================================================
+    (function () {
+      var lb = document.getElementById("lightbox");
+      if (!lb) return;
+
+      var body = lb.querySelector(".lightbox-body");
+      var btnClose = lb.querySelector(".lightbox-close");
+      var btnPrev = lb.querySelector(".lightbox-prev");
+      var btnNext = lb.querySelector(".lightbox-next");
+      var counter = lb.querySelector(".lightbox-count");
+      var backdrop = lb.querySelector(".lightbox-backdrop");
+      var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+      var lastFocus = null;
+      var car = null; // carousel state: { srcs: [], i: 0, title: "" }
+
+      // PDF.js is loaded lazily the first time a PDF is opened (see showPdf).
+      // pdfReq tracks the latest open request so a slow load can't render into
+      // a lightbox the user has since closed or replaced with another asset.
+      var pdfReq = 0;
+      var pdfJsLoading = false;
+      var pdfJsWaiters = [];
+      function ensurePdfJs(cb) {
+        if (window.pdfjsLib) return cb(true);
+        pdfJsWaiters.push(cb);
+        if (pdfJsLoading) return;
+        pdfJsLoading = true;
+        var s = document.createElement("script");
+        s.src =
+          "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js";
+        s.async = true;
+        s.onload = function () {
+          var ws = pdfJsWaiters;
+          pdfJsWaiters = [];
+          ws.forEach(function (f) { f(true); });
+        };
+        s.onerror = function () {
+          pdfJsLoading = false;
+          var ws = pdfJsWaiters;
+          pdfJsWaiters = [];
+          ws.forEach(function (f) { f(false); });
+        };
+        document.head.appendChild(s);
+      }
+      function showPdfLoading() {
+        clear();
+        var note = document.createElement("div");
+        note.className = "lb-loading";
+        note.textContent = "Loading…";
+        body.appendChild(note);
+      }
+      function showPdfFallback(src, title) {
+        clear();
+        var frame = document.createElement("iframe");
+        frame.src = src;
+        frame.title = title || "Sample deliverable";
+        body.appendChild(frame);
+      }
+
+      function clear() {
+        body.innerHTML = "";
+      }
+
+      function showImage(src, alt) {
+        clear();
+        var img = document.createElement("img");
+        img.decoding = "async";
+        img.src = src;
+        img.alt = alt || "Sample deliverable";
+        body.appendChild(img);
+      }
+
+      // Tall screenshots (landing pages): show roughly a quarter at a time in a
+      // vertical scroller, zoomed in enough to read, so you slide through it
+      // rather than seeing the whole page shrunk to fit at once.
+      function showScrollImage(src, title) {
+        clear();
+        var box = document.createElement("div");
+        box.className = "img-scroll";
+        var img = document.createElement("img");
+        img.decoding = "async";
+        img.alt = title || "Sample deliverable";
+        img.onload = function () {
+          var vh = Math.round(window.innerHeight * 0.88);
+          var ratio = img.naturalWidth / img.naturalHeight;
+          // Zoom so the on-screen height is ~4x the viewport (~25% visible at
+          // once), capped at 92vw. The box shrink-wraps to this width (CSS
+          // fit-content) so there is no blank space either side of the image.
+          var maxW = Math.round(window.innerWidth * 0.92);
+          var w = Math.min(Math.round(vh * 4 * ratio), maxW);
+          img.style.width = w + "px";
+        };
+        img.src = src;
+        box.appendChild(img);
+        body.appendChild(box);
+      }
+
+      function showPdf(src, title) {
+        clear();
+        // PDF.js is fetched on demand the first time a PDF is opened. While it
+        // loads, show a lightweight note; once ready, re-enter to render. If
+        // the fetch fails, fall back to a native iframe (the no-JS href also
+        // opens the PDF in a new tab, which pages correctly on the device).
+        if (!window.pdfjsLib) {
+          var myReq = ++pdfReq;
+          showPdfLoading();
+          ensurePdfJs(function (ok) {
+            if (myReq !== pdfReq || lb.hidden) return; // superseded or closed
+            if (ok && window.pdfjsLib) showPdf(src, title);
+            else showPdfFallback(src, title);
+          });
+          return;
+        }
+        var scroller = document.createElement("div");
+        scroller.className = "pdf-scroll";
+        scroller.setAttribute("aria-label", title || "PDF document");
+        body.appendChild(scroller);
+        if (!window.pdfjsLib.GlobalWorkerOptions.workerSrc) {
+          window.pdfjsLib.GlobalWorkerOptions.workerSrc =
+            "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+        }
+        var dpr = Math.min(window.devicePixelRatio || 1, 2);
+        window.pdfjsLib
+          .getDocument(src)
+          .promise.then(function (pdf) {
+            var targetW = scroller.clientWidth || 880;
+
+            // Draw one page into its placeholder.
+            function renderInto(ph) {
+              if (ph.__rendered) return;
+              ph.__rendered = true;
+              pdf.getPage(Number(ph.getAttribute("data-page"))).then(function (page) {
+                var base = page.getViewport({ scale: 1 });
+                var viewport = page.getViewport({ scale: (targetW / base.width) * dpr });
+                var canvas = document.createElement("canvas");
+                canvas.className = "pdf-page";
+                canvas.width = viewport.width;
+                canvas.height = viewport.height;
+                ph.style.height = "auto";
+                ph.innerHTML = "";
+                ph.appendChild(canvas);
+                page.render({ canvasContext: canvas.getContext("2d"), viewport: viewport });
+              });
+            }
+
+            // Release a page that has scrolled far away (frees canvas memory).
+            function freeInto(ph) {
+              if (!ph.__rendered) return;
+              ph.__rendered = false;
+              ph.innerHTML = "";
+              ph.style.height = ph.__estH + "px";
+            }
+
+            // Render pages only as they approach the viewport and release ones
+            // scrolled well away — keeps memory bounded for big decks so mobile
+            // Safari doesn't run out of memory. Driven by scroll position and
+            // run once immediately so page 1 shows right away.
+            var phs = [];
+            function update() {
+              var top = scroller.scrollTop;
+              var vh = scroller.clientHeight;
+              for (var i = 0; i < phs.length; i++) {
+                var ph = phs[i];
+                var pTop = ph.offsetTop;
+                var pBot = pTop + ph.offsetHeight;
+                if (pBot > top - 800 && pTop < top + vh + 800) renderInto(ph);
+                else freeInto(ph);
+              }
+            }
+
+            // Size every placeholder from page 1's aspect ratio up front so the
+            // scrollbar is correct before anything is rendered.
+            pdf.getPage(1).then(function (p1) {
+              var base = p1.getViewport({ scale: 1 });
+              var estH = Math.round(targetW * (base.height / base.width));
+              for (var n = 1; n <= pdf.numPages; n++) {
+                var ph = document.createElement("div");
+                ph.className = "pdf-ph";
+                ph.setAttribute("data-page", n);
+                ph.__estH = estH;
+                ph.style.height = estH + "px";
+                scroller.appendChild(ph);
+                phs.push(ph);
+              }
+              scroller.addEventListener("scroll", update, { passive: true });
+              update();
+            });
+          })
+          .catch(function () {
+            scroller.remove();
+            var frame = document.createElement("iframe");
+            frame.src = src;
+            frame.title = title || "Sample deliverable";
+            body.appendChild(frame);
+          });
+      }
+
+      function renderCarousel() {
+        showImage(car.srcs[car.i], car.title + " — slide " + (car.i + 1));
+        counter.textContent = car.i + 1 + " / " + car.srcs.length;
+        // Warm the neighbouring slides so left/right navigation is instant.
+        [1, -1].forEach(function (d) {
+          var j = (car.i + d + car.srcs.length) % car.srcs.length;
+          var pre = new Image();
+          pre.decoding = "async";
+          pre.src = car.srcs[j];
+        });
+      }
+
+      function nav(delta) {
+        if (!car) return;
+        car.i = (car.i + delta + car.srcs.length) % car.srcs.length;
+        renderCarousel();
+      }
+
+      function open(opts) {
+        lastFocus = document.activeElement;
+        car = null;
+        lb.classList.remove("is-carousel");
+
+        if (opts.type === "pdf") {
+          showPdf(opts.src, opts.title);
+        } else if (opts.type === "scroll-image") {
+          showScrollImage(opts.src, opts.title);
+        } else if (opts.type === "carousel") {
+          car = { srcs: opts.srcs, i: 0, title: opts.title || "Carousel" };
+          lb.classList.add("is-carousel");
+          renderCarousel();
+        } else {
+          showImage(opts.src, opts.title);
+        }
+
+        lb.hidden = false;
+        if (!reduce) {
+          // Force a reflow so the opacity transition runs from 0.
+          void lb.offsetWidth;
+        }
+        lb.classList.add("is-open");
+        document.body.style.overflow = "hidden";
+        btnClose.focus();
+        document.addEventListener("keydown", onKey);
+      }
+
+      function close() {
+        lb.classList.remove("is-open");
+        function done() {
+          lb.hidden = true;
+          clear();
+          counter.textContent = "";
+          document.body.style.overflow = "";
+          document.removeEventListener("keydown", onKey);
+          if (lastFocus && lastFocus.focus) lastFocus.focus();
+        }
+        if (reduce) done();
+        else setTimeout(done, 170);
+      }
+
+      function onKey(e) {
+        if (e.key === "Escape") {
+          e.preventDefault();
+          close();
+        } else if (e.key === "ArrowLeft") {
+          nav(-1);
+        } else if (e.key === "ArrowRight") {
+          nav(1);
+        } else if (e.key === "Tab") {
+          // Minimal focus trap across the currently visible controls.
+          var vis = [];
+          [btnClose, btnPrev, btnNext].forEach(function (b) {
+            if (b.offsetParent !== null) vis.push(b);
+          });
+          if (!vis.length) return;
+          var first = vis[0];
+          var last = vis[vis.length - 1];
+          if (e.shiftKey && document.activeElement === first) {
+            e.preventDefault();
+            last.focus();
+          } else if (!e.shiftKey && document.activeElement === last) {
+            e.preventDefault();
+            first.focus();
+          }
+        }
+      }
+
+      document.querySelectorAll("a[data-lb]").forEach(function (a) {
+        a.addEventListener("click", function (e) {
+          e.preventDefault();
+          var type = a.getAttribute("data-lb-type") || "image";
+          var title = a.getAttribute("data-lb-title") || "";
+          if (type === "carousel") {
+            var srcs = (a.getAttribute("data-lb-srcs") || "")
+              .split("|")
+              .filter(Boolean);
+            open({ type: "carousel", srcs: srcs, title: title });
+          } else {
+            open({ type: type, src: a.getAttribute("href"), title: title });
+          }
+        });
+      });
+
+      btnClose.addEventListener("click", close);
+      btnPrev.addEventListener("click", function () {
+        nav(-1);
+      });
+      btnNext.addEventListener("click", function () {
+        nav(1);
+      });
+      backdrop.addEventListener("click", close);
+    })();
+
+    // ===========================================================
+    // BOOKING MODAL
+    // The hero CTA opens a Calendly embed in a fixed overlay rendered OUTSIDE
+    // the scaled .page (like the lightbox), so it never grows or scroll-traps
+    // the clipped page — the source of the mobile glitch. Body scroll is locked
+    // while open. Calendly is lazy-loaded: the iframe src is only set the first
+    // time the CTA is clicked (from its data-src). The anchor keeps a real href
+    // so it still opens Calendly in a new tab if JS is disabled.
+    // ===========================================================
+    (function () {
+      var cta = document.getElementById("cta-book");
+      var modal = document.getElementById("calendar-widget");
+      if (!cta || !modal) return;
+      var closeBtn = document.getElementById("calendar-close");
+      var backdrop = modal.querySelector(".booking-backdrop");
+      var frame = modal.querySelector(".calendar-frame iframe");
+      var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      var lastFocus = null;
+
+      function loadCalendly() {
+        // Copy data-src -> src exactly once, so the Calendly embed only loads
+        // when the CTA is first clicked (nothing fetched on initial page load).
+        if (frame && !frame.getAttribute("src")) {
+          var src = frame.getAttribute("data-src");
+          if (src) frame.setAttribute("src", src);
+        }
+      }
+
+      function openModal() {
+        lastFocus = document.activeElement;
+        loadCalendly();
+        modal.hidden = false;
+        cta.setAttribute("aria-expanded", "true");
+        if (!reduce) {
+          // Force a reflow so the fade-in runs from 0.
+          void modal.offsetWidth;
+        }
+        modal.classList.add("is-open");
+        document.body.style.overflow = "hidden";
+        if (closeBtn) closeBtn.focus();
+        document.addEventListener("keydown", onKey);
+      }
+
+      function closeModal() {
+        cta.setAttribute("aria-expanded", "false");
+        modal.classList.remove("is-open");
+        document.body.style.overflow = "";
+        document.removeEventListener("keydown", onKey);
+        function done() {
+          modal.hidden = true;
+          if (lastFocus && lastFocus.focus) lastFocus.focus();
+        }
+        if (reduce) {
+          done();
+          return;
+        }
+        modal.addEventListener("transitionend", function onEnd(e) {
+          if (e.target !== modal || e.propertyName !== "opacity") return;
+          modal.removeEventListener("transitionend", onEnd);
+          // Guard against a re-open that happened mid fade-out.
+          if (!modal.classList.contains("is-open")) done();
+        });
+      }
+
+      function onKey(e) {
+        if (e.key === "Escape") {
+          e.preventDefault();
+          closeModal();
+        }
+      }
+
+      cta.addEventListener("click", function (e) {
+        e.preventDefault();
+        // Use the is-open class (not the hidden attr, which only flips after the
+        // fade-out) so a quick close-then-click reliably re-opens.
+        if (modal.classList.contains("is-open")) closeModal();
+        else openModal();
+      });
+      if (closeBtn) closeBtn.addEventListener("click", closeModal);
+      if (backdrop) backdrop.addEventListener("click", closeModal);
+    })();
+
+    // ===========================================================
+    // HERO VIDEO — HARDWIRED 1.5x PLAYBACK, PITCH PRESERVED
+    // The self-hosted walkthrough plays at 1.5x so it stays short. preservesPitch
+    // keeps the audio at its natural pitch (no chipmunk effect), so the faster
+    // playback still looks and sounds normal. The rate is re-applied on load and
+    // on play because some engines reset playbackRate when the media (re)loads,
+    // and preservesPitch is set with its vendor-prefixed variants for older
+    // Safari / Firefox.
+    // ===========================================================
+    (function () {
+      var wrap = document.getElementById("vplayer");
+      var v = document.getElementById("hero-video");
+      if (!wrap || !v) return;
+      var bigplay = document.getElementById("vp-bigplay");
+      var playBtn = document.getElementById("vp-play");
+      var fsBtn = document.getElementById("vp-fs");
+      var prog = document.getElementById("vp-progress");
+      var played = document.getElementById("vp-played");
+      var buffered = document.getElementById("vp-buffered");
+      var handle = document.getElementById("vp-handle");
+      var RATE = 1.5;
+      var idleTimer = null;
+
+      // --- Hardwired 1.5x, pitch preserved (re-applied on load + play) ---
+      function applyRate() {
+        if ("preservesPitch" in v) v.preservesPitch = true;
+        if ("mozPreservesPitch" in v) v.mozPreservesPitch = true;
+        if ("webkitPreservesPitch" in v) v.webkitPreservesPitch = true;
+        if (v.playbackRate !== RATE) v.playbackRate = RATE;
+      }
+      applyRate();
+      v.addEventListener("loadedmetadata", function () { applyRate(); update(); });
+
+      // --- Play / pause ---
+      function toggle() { if (v.paused) v.play(); else v.pause(); }
+      v.addEventListener("play", function () { applyRate(); wrap.classList.add("vp-playing"); showBar(); });
+      v.addEventListener("pause", function () { wrap.classList.remove("vp-playing"); showBar(); });
+      v.addEventListener("ended", function () { wrap.classList.remove("vp-playing"); showBar(); });
+      v.addEventListener("click", function (e) { e.stopPropagation(); toggle(); });
+      bigplay.addEventListener("click", function (e) { e.stopPropagation(); toggle(); });
+      playBtn.addEventListener("click", function (e) { e.stopPropagation(); toggle(); });
+
+      // --- Playbar (progress + buffered) ---
+      function pct(x) { return (Math.max(0, Math.min(1, x)) * 100) + "%"; }
+      // Piecewise-linear playback indicator: the bar fill + handle (and the
+      // ARIA position) show a WARPED position via linear interpolation through
+      // fixed anchor points, so early progress reads much further along:
+      //   t:     0    0.125  0.25  0.5   0.75   1
+      //   shown: 0    0.25   0.5   0.75  0.875  1
+      // Seeking inverts the SAME map (see seekTo / realFromShown). The
+      // <video>.currentTime always stays the real, linear value — only the
+      // display is warped. Both T and S are strictly increasing, so shown() and
+      // realFromShown() are well-defined inverses.
+      var T = [0, 0.125, 0.25, 0.5, 0.75, 1];
+      var S = [0, 0.25, 0.5, 0.70, 0.86, 1];
+      function shown(t) {
+        if (t <= 0) return 0;
+        if (t >= 1) return 1;
+        for (var i = 1; i < T.length; i++) {
+          if (t <= T[i]) {
+            var f = (t - T[i - 1]) / (T[i] - T[i - 1]);
+            return S[i - 1] + f * (S[i] - S[i - 1]);
+          }
+        }
+        return 1;
+      }
+      function realFromShown(s) {
+        if (s <= 0) return 0;
+        if (s >= 1) return 1;
+        for (var i = 1; i < S.length; i++) {
+          if (s <= S[i]) {
+            var f = (s - S[i - 1]) / (S[i] - S[i - 1]);
+            return T[i - 1] + f * (T[i] - T[i - 1]);
+          }
+        }
+        return 1;
+      }
+      function update() {
+        if (!v.duration || isNaN(v.duration)) return;
+        var s = shown(v.currentTime / v.duration);
+        played.style.width = pct(s);
+        handle.style.left = pct(s);
+        prog.setAttribute("aria-valuenow", Math.round(s * 100));
+        if (v.buffered && v.buffered.length) {
+          // Warp buffered too, so the played fill can never sit ahead of it.
+          buffered.style.width = pct(shown(v.buffered.end(v.buffered.length - 1) / v.duration));
+        }
+      }
+      v.addEventListener("timeupdate", update);
+      v.addEventListener("progress", update);
+
+      // --- Seek by click / drag on the playbar ---
+      function seekTo(clientX) {
+        var r = prog.getBoundingClientRect();
+        // The clicked position along the bar is a "shown" (warped) value; invert
+        // it through the SAME piecewise map back to a real fraction before
+        // seeking, so the handle lands exactly where it was dropped and the
+        // mapping stays consistent while dragging.
+        var s = Math.max(0, Math.min(1, (clientX - r.left) / r.width));
+        if (v.duration) { v.currentTime = realFromShown(s) * v.duration; update(); }
+      }
+      var dragging = false;
+      prog.addEventListener("pointerdown", function (e) {
+        e.stopPropagation();
+        dragging = true;
+        wrap.classList.add("vp-scrubbing");
+        if (prog.setPointerCapture) prog.setPointerCapture(e.pointerId);
+        seekTo(e.clientX);
+      });
+      prog.addEventListener("pointermove", function (e) { if (dragging) seekTo(e.clientX); });
+      function endDrag() { if (dragging) { dragging = false; wrap.classList.remove("vp-scrubbing"); } }
+      prog.addEventListener("pointerup", endDrag);
+      prog.addEventListener("pointercancel", endDrag);
+      prog.addEventListener("keydown", function (e) {
+        if (!v.duration) return;
+        if (e.key === "ArrowRight") { v.currentTime = Math.min(v.duration, v.currentTime + 5); update(); e.preventDefault(); }
+        else if (e.key === "ArrowLeft") { v.currentTime = Math.max(0, v.currentTime - 5); update(); e.preventDefault(); }
+      });
+
+      // --- Fullscreen (on the player container so our controls show too) ---
+      function inFs() {
+        return document.fullscreenElement === wrap || document.webkitFullscreenElement === wrap;
+      }
+      fsBtn.addEventListener("click", function (e) {
+        e.stopPropagation();
+        if (inFs()) {
+          (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+        } else if (wrap.requestFullscreen) {
+          wrap.requestFullscreen();
+        } else if (wrap.webkitRequestFullscreen) {
+          wrap.webkitRequestFullscreen();
+        } else if (v.webkitEnterFullscreen) {
+          v.webkitEnterFullscreen(); // iOS native fallback
+        }
+      });
+      function onFsChange() { wrap.classList.toggle("vp-fsactive", inFs()); }
+      document.addEventListener("fullscreenchange", onFsChange);
+      document.addEventListener("webkitfullscreenchange", onFsChange);
+
+      // --- Auto-hide the control bar while playing + pointer idle ---
+      function showBar() {
+        wrap.classList.remove("vp-idle");
+        if (idleTimer) clearTimeout(idleTimer);
+        if (!v.paused) idleTimer = setTimeout(function () { wrap.classList.add("vp-idle"); }, 2500);
+      }
+      wrap.addEventListener("pointermove", showBar);
+      wrap.addEventListener("pointerleave", function () { if (!v.paused) wrap.classList.add("vp-idle"); });
+
+      // Space toggles play when the player itself is focused.
+      wrap.addEventListener("keydown", function (e) {
+        if ((e.key === " " || e.key === "Spacebar") && e.target === wrap) { toggle(); e.preventDefault(); }
+      });
+    })();
+
+    // ===========================================================
+    // DELIVERABLE PREVIEWS (raw supplied images — no post-processing)
+    // For every LIVE sample-deliverable card (its data-lb href — or, for a
+    // carousel, its first data-lb-srcs entry — does NOT start with "["), inject
+    // the card's supplied preview image between the sample label and the CTA,
+    // chosen by ONE simple rule:
+    //   • If the asset is a .jpg / .png, use that image.
+    //   • If the asset is a PDF, DON'T touch the PDF — use a sibling image from
+    //     the asset's own folder: "Flat" (Reel, Direct-to-camera), "Deck"
+    //     (Slideshow), or "Stack" (every other PDF), as .png or .jpg.
+    // Image instances (.jpg/.png: image, carousel, landing page) get the site's
+    // obscured look — blur + dark tint/vignette + framed rounded card. PDF
+    // instances (the pre-styled Flat/Stack/Deck images) get NO blur/vignette,
+    // just the same rounded-corner card. Landing-page screenshots crop to a 4:3
+    // vertical card (top of the page, cover); everything else keeps its natural
+    // aspect ratio.
+    // Coming-soon / bracketed cards get nothing. Rendering is lazy
+    // (IntersectionObserver, ~200px). Every window is aria-hidden +
+    // pointer-events:none, so the CTA remains the ONLY way to open the lightbox
+    // (which still opens the real assets, incl. real PDFs, and is untouched).
+    // ===========================================================
+    (function () {
+      var BLUR_PX = 5;        // blur strength on image-instance previews, px
+      var TINT_ALPHA = 0.35;  // dark tint alpha on image-instance previews
+      var root = document.documentElement;
+      root.style.setProperty("--dp-blur", BLUR_PX + "px");
+      root.style.setProperty("--dp-tint", String(TINT_ALPHA));
+
+      function fail(win) {
+        var pre = win.closest(".dp-preview");
+        if (pre) pre.style.display = "none"; // hide THIS window gracefully
+      }
+
+      // Place a supplied image into the window. `list` is one or more candidate
+      // srcs tried in order (PDF previews try the folder's Flat/Stack/Deck image
+      // as .png then .jpg). When setRatio is true the window takes the image's
+      // natural aspect ratio; landing pages pass false to keep their fixed 3:4.
+      // Any blur / vignette / frame is applied purely in CSS (the window's
+      // .dp-obscure class). If all srcs fail, the window hides gracefully.
+      function renderImage(win, list, setRatio) {
+        var i = 0;
+        (function attempt() {
+          if (i >= list.length) return fail(win);
+          var img = new Image();
+          img.decoding = "async";
+          img.className = "dp-media";
+          img.onload = function () {
+            if (!img.naturalWidth || !img.naturalHeight) { i++; return attempt(); }
+            if (setRatio) win.style.aspectRatio = img.naturalWidth + " / " + img.naturalHeight;
+            win.appendChild(img);
+          };
+          img.onerror = function () { i++; attempt(); };
+          img.src = list[i];
+        })();
+      }
+
+      // For a PDF card, pick the sibling preview image in the asset's OWN folder:
+      // "Flat" (Reel, Direct-to-camera), "Deck" (Slideshow), or "Stack" (every
+      // other PDF). Returns the name + .png / .jpg candidate srcs (tried in order).
+      function pdfPreview(a) {
+        var t = (a.getAttribute("data-lb-title") || "").toLowerCase();
+        var h = a.getAttribute("href") || "";
+        var hl = h.toLowerCase();
+        var name;
+        if (hl.indexOf("/webinar/slideshow") >= 0 || t.indexOf("slideshow") >= 0) {
+          name = "Deck";
+        } else if (hl.indexOf("/pieces/reel") >= 0 || t.indexOf("reel") >= 0 ||
+                   hl.indexOf("direct-to-camera") >= 0 || t.indexOf("direct-to-camera") >= 0) {
+          name = "Flat";
+        } else {
+          name = "Stack";
+        }
+        var folder = h.substring(0, h.lastIndexOf("/") + 1); // keeps %20 / %26 encoding
+        return { name: name, srcs: [folder + name + ".png", folder + name + ".jpg"] };
+      }
+
+      // Build + insert a preview for one live card; returns { win, render } or
+      // null for coming-soon / bracketed cards.
+      function build(anchor) {
+        var type = anchor.getAttribute("data-lb-type") || "image";
+        var srcs = null, src;
+        if (type === "carousel") {
+          srcs = (anchor.getAttribute("data-lb-srcs") || "").split("|").filter(Boolean);
+          src = srcs[0];
+        } else {
+          src = anchor.getAttribute("href");
+        }
+        if (!src || src.charAt(0) === "[") return null; // bracketed / coming-soon
+
+        var wrapDiv = anchor.parentNode;            // the <div class="mt-6"> holding the CTA
+        if (!wrapDiv || !wrapDiv.parentNode) return null;
+
+        var pre = document.createElement("div");
+        pre.className = "dp-preview";
+        pre.setAttribute("aria-hidden", "true");
+        var win = document.createElement("div");
+        win.className = "dp-win";
+
+        var imgList, isScroll = (type === "scroll-image");
+        if (type === "pdf") {
+          var pv = pdfPreview(anchor);           // Flat / Stack / Deck sibling image (pre-styled)
+          imgList = pv.srcs;
+          var card = anchor.closest(".block-card");
+          if (card) card.setAttribute("data-preview", pv.name); // tag the live pdf card
+        } else {
+          imgList = [src];                       // image / carousel first slide / scroll-image
+          win.classList.add("dp-obscure");       // image instances: blur + vignette + frame
+          if (isScroll) win.classList.add("dp-scroll"); // landing pages: 4:3 top-crop
+        }
+        pre.appendChild(win);
+        wrapDiv.parentNode.insertBefore(pre, wrapDiv); // between sample-label and CTA
+
+        // Natural ratio for everything except landing pages (fixed 3:4 scroll).
+        function render() { renderImage(win, imgList, !isScroll); }
+        return { win: win, render: render };
+      }
+
+      var items = [];
+      document.querySelectorAll("a[data-lb]").forEach(function (a) {
+        var it = build(a);
+        if (it) items.push(it);
+      });
+      if (!items.length) return;
+
+      // Build every preview immediately on load. (An IntersectionObserver gate
+      // was tried for lazy RENDERING, but it does not fire reliably for these
+      // windows inside the transform-scaled, overflow-clipped .page, which left
+      // previews blank. Native loading="lazy" on each preview <img> still
+      // defers the actual image FETCH until it nears the viewport, so we keep
+      // the lazy-fetch win without gating render on the observer.)
+      items.forEach(function (it) { it.render(); });
+    })();
+
+    // ===========================================================
+    // PART-INSTANCE VERTICAL SLIDERS
+    // For each deliverable TYPE that has PARTS, the parts sit as columns across
+    // the type (the existing horizontal slider). Within each part column, wrap
+    // its instance cards in a fixed ONE-CARD-TALL vertical scroller (scroll-snap)
+    // so the parts row never grows with instance count and one instance shows at
+    // a time; a small down-arrow hints "scroll for more". Types with NO parts put
+    // their instance cards directly in the slider (no wrapper div) and are left
+    // untouched. Runs AFTER previews are built so heights include them; a
+    // ResizeObserver re-fits when preview images load or the viewport changes.
+    // ===========================================================
+    (function () {
+      // A "part column" is a direct <div> child of a .deliverables-slider that
+      // holds instance .block-cards. (No-part types place .block-cards directly
+      // in the slider, so they have no such wrapper div and are skipped.)
+      document.querySelectorAll(".deliverables-slider > div").forEach(function (col) {
+        var cards = [];
+        for (var i = 0; i < col.children.length; i++) {
+          var ch = col.children[i];
+          if (ch.classList && ch.classList.contains("block-card")) cards.push(ch);
+        }
+        if (!cards.length) return;
+
+        var wrap = document.createElement("div");
+        wrap.className = "part-vwrap";
+        var scroll = document.createElement("div");
+        scroll.className = "part-vscroll";
+        // Move cards into the scroller (preserves their listeners + previews).
+        cards.forEach(function (c) { scroll.appendChild(c); });
+        wrap.appendChild(scroll);
+        col.appendChild(wrap); // sits after the part label / info button
+        // The scroller fills the fixed 3/4 part frame via CSS flex (no JS height
+        // fit), and the scrollbar itself signals scrollability (no down-arrow).
+      });
+    })();
+
+    // ===========================================================
+    // CLIENT RESULTS BOARD (self-contained, draggable + zoomable)
+    // Replaces the live Miro embed: drag to pan, wheel / pinch to zoom — like
+    // dragging around a Miro board. Panning is clamped to the image plus a small
+    // margin (no infinite empty space); min zoom fits the whole board in the
+    // frame; it always opens on the framed whole-board view. Vanilla JS, no
+    // libraries. Pointer coordinates are divided by the page's transform scale so
+    // pan/zoom track the pointer 1:1 inside the uniformly-scaled .page.
+    // ===========================================================
+    (function () {
+      var board = document.getElementById("results-board");
+      var img = document.getElementById("results-board-img");
+      if (!board || !img) return;
+      var iw = 0, ih = 0, scale = 1, minScale = 1, maxScale = 1, tx = 0, ty = 0;
+      var MARGIN = 0.6; // pan slack beyond the image, as a fraction of the frame
+      var ready = false;
+
+      function pageScale() {
+        var r = board.getBoundingClientRect();
+        return board.clientWidth ? r.width / board.clientWidth : 1;
+      }
+      function apply() {
+        img.style.transform = "translate(" + tx + "px, " + ty + "px) scale(" + scale + ")";
+      }
+      function clampPan() {
+        var vw = board.clientWidth, vh = board.clientHeight;
+        var sw = iw * scale, sh = ih * scale;
+        var mx = vw * MARGIN, my = vh * MARGIN;
+        // Allow MARGIN slack in BOTH axes even when an axis exactly fills (or is
+        // smaller than) the frame, so the user can pan horizontally, vertically
+        // and diagonally without having to zoom in first. Only fall back to a
+        // hard centre if the slack range would be inverted.
+        var loX = vw - sw - mx, hiX = mx;
+        var loY = vh - sh - my, hiY = my;
+        tx = loX > hiX ? (vw - sw) / 2 : Math.min(hiX, Math.max(loX, tx));
+        ty = loY > hiY ? (vh - sh) / 2 : Math.min(hiY, Math.max(loY, ty));
+      }
+      function fitWhole() {
+        var vw = board.clientWidth, vh = board.clientHeight;
+        if (!iw || !ih || !vw || !vh) return;
+        // COVER the 4:3 frame edge-to-edge (no letterbox band); the frame height
+        // comes purely from its 4/3 CSS aspect-ratio. Off-frame parts are
+        // reachable by pan/zoom (clampPan + MARGIN).
+        minScale = Math.max(vw / iw, vh / ih);
+        maxScale = minScale * 6;
+        scale = minScale;
+        tx = (vw - iw * scale) / 2;
+        ty = (vh - ih * scale) / 2;
+        apply();
+      }
+      function onImg() {
+        if (ready) return;                 // only flip ready + fit once
+        iw = img.naturalWidth; ih = img.naturalHeight;
+        if (!iw || !ih) return;
+        img.style.width = iw + "px"; img.style.height = ih + "px";
+        ready = true;
+        fitWhole();
+      }
+      img.addEventListener("load", onImg);
+      if (img.complete && img.naturalWidth) onImg();
+      // Robustness: a cached/already-complete image can miss "load", so also try
+      // decode() and a short timeout. onImg is a no-op once ready, so calling it
+      // more than once is harmless.
+      if (img.decode) { img.decode().then(onImg).catch(function () {}); }
+      setTimeout(function () { if (!ready) onImg(); }, 500);
+
+      function zoomAt(cx, cy, factor) {
+        var ns = Math.min(maxScale, Math.max(minScale, scale * factor));
+        if (ns === scale) return;
+        var k = ns / scale;
+        tx = cx - (cx - tx) * k;
+        ty = cy - (cy - ty) * k;
+        scale = ns;
+        clampPan(); apply();
+      }
+
+      // --- Pointer pan (one finger / mouse) + pinch zoom (two fingers) ---
+      var pts = {}, pinchDist = 0;
+      function pcount() { var n = 0; for (var k in pts) if (pts.hasOwnProperty(k)) n++; return n; }
+      function twoPoints() {
+        var a = null, b = null;
+        for (var k in pts) { if (!pts.hasOwnProperty(k)) continue; if (!a) a = pts[k]; else b = pts[k]; }
+        return [a, b];
+      }
+      board.addEventListener("pointerdown", function (e) {
+        if (!ready) return;
+        pts[e.pointerId] = { x: e.clientX, y: e.clientY };
+        board.classList.add("is-dragging");
+        if (board.setPointerCapture) { try { board.setPointerCapture(e.pointerId); } catch (err) {} }
+        if (pcount() === 2) {
+          var p = twoPoints();
+          pinchDist = Math.hypot(p[0].x - p[1].x, p[0].y - p[1].y) || 1;
+        }
+      });
+      board.addEventListener("pointermove", function (e) {
+        if (!ready || !pts[e.pointerId]) return;
+        var ps = pageScale() || 1;
+        var prev = pts[e.pointerId];
+        pts[e.pointerId] = { x: e.clientX, y: e.clientY };
+        if (pcount() >= 2) {
+          var p = twoPoints();
+          if (!p[0] || !p[1]) return;
+          var nd = Math.hypot(p[0].x - p[1].x, p[0].y - p[1].y) || 1;
+          var r = board.getBoundingClientRect();
+          var cx = ((p[0].x + p[1].x) / 2 - r.left) / ps;
+          var cy = ((p[0].y + p[1].y) / 2 - r.top) / ps;
+          zoomAt(cx, cy, nd / (pinchDist || nd));
+          pinchDist = nd;
+        } else {
+          tx += (e.clientX - prev.x) / ps;
+          ty += (e.clientY - prev.y) / ps;
+          clampPan(); apply();
+        }
+      });
+      function endPointer(e) {
+        if (pts[e.pointerId]) delete pts[e.pointerId];
+        if (pcount() === 0) board.classList.remove("is-dragging");
+      }
+      board.addEventListener("pointerup", endPointer);
+      board.addEventListener("pointercancel", endPointer);
+
+      // --- Wheel / trackpad ---
+      // Plain wheel / trackpad (and ctrl+wheel / pinch) ZOOM around the cursor —
+      // deltaY<0 in, else out. SHIFT+wheel does 2-axis PAN once zoomed past the
+      // fit. Drag also pans (above). The wheel is only trapped when it actually
+      // zooms/pans, so at the fit limit the page scrolls normally.
+      board.addEventListener("wheel", function (e) {
+        if (!ready) return;
+        var ps = pageScale() || 1;
+        if (e.shiftKey && scale > minScale + 1e-6) {
+          e.preventDefault();
+          tx -= e.deltaX / ps;
+          ty -= e.deltaY / ps;
+          clampPan();
+          apply();
+          return;
+        }
+        var before = scale;
+        var r = board.getBoundingClientRect();
+        zoomAt((e.clientX - r.left) / ps, (e.clientY - r.top) / ps, e.deltaY < 0 ? 1.12 : 1 / 1.12);
+        if (scale !== before) e.preventDefault();
+      }, { passive: false });
+
+      // Re-fit to the whole-board view on resize.
+      window.addEventListener("resize", function () { if (ready) fitWhole(); }, { passive: true });
+    })();
+
+    // ===========================================================
+    // SCALE HEIGHT COMPENSATION
+    // .page is shrunk with transform: scale(...). A transform does not
+    // change the element's layout box, so without help the document keeps
+    // its full unscaled height and leaves a large empty gap below the
+    // content. We size the .page-clip wrapper to the page's visual height
+    // and let its overflow:hidden clip the leftover, so the document ends
+    // exactly where the visible content does.
+    // ===========================================================
+    (function () {
+      var page = document.querySelector(".page");
+      var clip = document.querySelector(".page-clip");
+      if (!page || !clip) return;
+
+      function fit() {
+        // getBoundingClientRect() returns the post-transform (visual) height,
+        // consistently across engines. Set the clipping wrapper to exactly
+        // that height so the document ends where the visible content does and
+        // the leftover unscaled layout height is clipped away.
+        var visualHeight = page.getBoundingClientRect().height;
+        clip.style.height = visualHeight + "px";
+      }
+
+      // Run on the next frame so layout is settled, and re-run on every event
+      // that can change the content height (font swap, image load, resize).
+      function fitSoon() {
+        if (window.requestAnimationFrame) {
+          window.requestAnimationFrame(fit);
+        } else {
+          fit();
+        }
+      }
+
+      fitSoon();
+      document.addEventListener("DOMContentLoaded", fitSoon);
+      window.addEventListener("load", fitSoon);
+      window.addEventListener("resize", fitSoon);
+      window.addEventListener("orientationchange", fitSoon);
+
+      // Web fonts reflow the page after they load; re-fit once they're ready.
+      if (document.fonts && document.fonts.ready) {
+        document.fonts.ready.then(fitSoon);
+      }
+
+      // Catch any other late content-box changes.
+      if ("ResizeObserver" in window) {
+        new ResizeObserver(fitSoon).observe(page);
+      }
+    })();
+  </script>
+</body>
+</html>
